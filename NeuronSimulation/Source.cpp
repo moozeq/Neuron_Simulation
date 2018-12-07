@@ -11,9 +11,9 @@ extern "C" {
 int main(void)
 {
 	Config config;
-	config.width = 800;
+	config.width = 1200;
 	config.height = 800;
-	config.NapIonsNum = 10;
+	config.NapIonsNum = 1000;
 	config.KpIonsNum = 10;
 	config.logPath = "simulation.log";
 

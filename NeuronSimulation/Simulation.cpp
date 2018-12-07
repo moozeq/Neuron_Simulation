@@ -35,8 +35,9 @@ void Simulation::setupOpenGL()
 		throw("GLEW initialization's failed");
 
 	// enable alpha channel in textures
-	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glEnable(GL_BLEND);
+	glEnable(GL_DEPTH_TEST);
 
 	glViewport(0, 0, width, height);
 
@@ -56,6 +57,8 @@ void Simulation::setupInput()
 	glfwSetCursorPosCallback(window, cursorPosCallback);
 	glfwSetScrollCallback(window, scrollCallback);
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
+
+	//camera = Camera(glm::vec3(0.0f, 0.0f, 10.0f));
 }
 
 void Simulation::setupPrograms()
@@ -66,6 +69,14 @@ void Simulation::setupPrograms()
 		   "Ions.frag"
 		});
 	ionsRenderProgram = new ShaderProgram(sh::VFG, ionsPaths);
+}
+
+void Simulation::setupStructures()
+{
+	NapIons.reserve(config.NapIonsNum);
+	for (size_t i = 0; i < config.NapIonsNum; ++i)
+		NapIons.push_back(Particle({GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), 0.0, 0.0, 0.0, phy::NapC, phy::NapM}));
+		//NapIons.push_back(Particle({GET_RAND_DOUBLE(-1.0, 1.0), GET_RAND_DOUBLE(-1.0, 1.0), 0.0, 0.0, 0.0, 0.0, phy::NapC, phy::NapM}));
 }
 
 void Simulation::setupBuffers()
@@ -82,78 +93,22 @@ void Simulation::setupBuffers()
 	glCreateVertexArrays(1, &NapIonsVAO);
 
 	// creating buffers
-	glCreateBuffers(1, &NapIonsPos);
+	glCreateBuffers(1, &NapIonsPosBuf);
 
 	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-	GLsizei bufferSize = config.NapIonsNum * 3 * sizeof(GLfloat);
-	glNamedBufferStorage(NapIonsPos, bufferSize, nullptr, flags);
-	glVertexArrayVertexBuffer(NapIonsVAO, 0, NapIonsPos, 0, 3 * sizeof(GLfloat));
-	glVertexArrayAttribFormat(NapIonsVAO, 0, 2, GL_FLOAT, GL_FALSE, 0);
+	GLsizei bufferSize = NapIons.size() * 3 * sizeof(GLfloat);
+	glNamedBufferStorage(NapIonsPosBuf, bufferSize, nullptr, flags);
+	glVertexArrayVertexBuffer(NapIonsVAO, 0, NapIonsPosBuf, 0, 3 * sizeof(GL_FLOAT));
+	glVertexArrayAttribFormat(NapIonsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(NapIonsVAO, 0, 0);
 	glEnableVertexArrayAttrib(NapIonsVAO, 0);
 
 	// initialize buffers in GPU and get pointers to them
-	NapIons = (float*)glMapNamedBuffer(NapIonsPos, GL_WRITE_ONLY);
-	if (!NapIons)
+	NapIonsPos = (float*)glMapNamedBuffer(NapIonsPosBuf, GL_WRITE_ONLY);
+	if (!NapIonsPos)
 		throw("Buffer mapping failed");
 
-	NapIons[0] = 0.5f;
-	NapIons[1] = 0.5f;
-	NapIons[2] = 0.0f;
-
-	glUnmapNamedBuffer(NapIonsPos);
-}
-
-Simulation::Simulation(const Config& config)
-{
-	loadConfig(config);
-	setupOpenGL();
-	setupInput();
-	setupPrograms();
-	setupBuffers();
-}
-
-
-Simulation::~Simulation()
-{
-	glfwDestroyWindow(window);
-	logfile.close();
-}
-
-void Simulation::render(double time)
-{
-	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	ionsRenderProgram->use();
-	glm::mat4 viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
-	ionsRenderProgram->setViewMatrix(viewMatrix);
-
-	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
-	glBindVertexArray(NapIonsVAO);
-	glDrawArrays(GL_POINTS, 0, 1);
-
-	glfwSwapBuffers(window);
-	glBindVertexArray(0);
-	glUseProgram(0);
-	glfwPollEvents();
-}
-
-void Simulation::start(void)
-{
-	log(logfile, "--- Simulation's started ---");
-	currentFrame = lastFrame = deltaTime = 0.0;
-
-	// main simulation loop
-	while (!glfwWindowShouldClose(window))
-	{
-		currentFrame = glfwGetTime();
-		deltaTime = currentFrame - lastFrame;
-		lastFrame = currentFrame;
-
-		// rendering
-		render(currentFrame);
-	}
+	glUnmapNamedBuffer(NapIonsPosBuf);
 }
 
 void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -190,7 +145,6 @@ void Simulation::mouseButtonCallback(GLFWwindow* window, int button, int action,
 		x -= 1.0;
 		y -= 1.0;
 		y *= -1.0;
-
 	}
 }
 
@@ -203,11 +157,11 @@ void Simulation::cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
 
 	simulation->camera.lastX = (float)xpos;
 	simulation->camera.lastY = (float)ypos;
-	simulation->camera.processMouseMovement(xoffset, yoffset);
 
 	int state = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT);
 	if (state == GLFW_PRESS)
-		mouseButtonCallback(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, 0);
+		simulation->camera.processMouseMovement(xoffset, yoffset);
+		//mouseButtonCallback(window, GLFW_MOUSE_BUTTON_LEFT, GLFW_PRESS, 0);
 }
 
 void Simulation::scrollCallback(GLFWwindow * window, double xoffset, double yoffset)
@@ -232,4 +186,97 @@ bool Simulation::updateFramebufferSize(int width, int height)
 	this->width = width;
 	this->height = height;
 	return true;
+}
+
+inline void Simulation::updateIons()
+{
+	size_t j = 0;
+	for (Particle& currParticle : NapIons) {
+		double ax = 0.0;
+		double ay = 0.0;
+		double az = 0.0;
+		for (Particle& particle : NapIons) {
+			double dx = phy::metricFactor * (particle.x - currParticle.x);
+			double dy = phy::metricFactor * (particle.y - currParticle.y);
+			double dz = phy::metricFactor * (particle.z - currParticle.z);
+
+			double d = cbrt(dx * dx + dy * dy + dz * dz);
+			if (d == 0.0)
+				continue;
+			double F = phy::k * currParticle.charge * particle.charge / d;
+			double a = F / currParticle.mass;
+
+			ax -= a * dx / d;
+			ay -= a * dy / d;
+			az -= a * dz / d;
+		}
+		NapIonsPos[j++] = currParticle.x += currParticle.vx * deltaTime + ax * deltaTime * deltaTime / 2;
+		NapIonsPos[j++] = currParticle.y += currParticle.vy * deltaTime + ay * deltaTime * deltaTime / 2;
+		NapIonsPos[j++] = currParticle.z += currParticle.vz * deltaTime + az * deltaTime * deltaTime / 2;
+
+		currParticle.vx += ax * deltaTime;
+		currParticle.vy += ay * deltaTime;
+		currParticle.vz += az * deltaTime;
+	}
+}
+
+inline void Simulation::update()
+{
+	updateIons();
+}
+
+void Simulation::render()
+{
+	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	ionsRenderProgram->use();
+	glm::mat4 viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
+	ionsRenderProgram->setViewMatrix(viewMatrix);
+
+	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
+	glBindVertexArray(NapIonsVAO);
+	glDrawArrays(GL_POINTS, 0, NapIons.size());
+
+	glFlush();
+	glfwSwapBuffers(window);
+	glBindVertexArray(0);
+	glUseProgram(0);
+	glfwPollEvents();
+}
+
+Simulation::Simulation(const Config& config)
+{
+	loadConfig(config);
+	setupOpenGL();
+	setupInput();
+	setupPrograms();
+	setupStructures();
+	setupBuffers();
+}
+
+Simulation::~Simulation()
+{
+	glfwDestroyWindow(window);
+	logfile.close();
+}
+
+void Simulation::start(void)
+{
+	log(logfile, "--- Simulation's started ---");
+	currentFrame = lastFrame = deltaTime = 0.0;
+
+	// main simulation loop
+	while (!glfwWindowShouldClose(window))
+	{
+		currentFrame = glfwGetTime();
+		deltaTime = phy::timeFactor * (currentFrame - lastFrame);
+		lastFrame = currentFrame;
+
+		// simulation logic
+		update();
+
+		// rendering
+		render();
+	}
 }

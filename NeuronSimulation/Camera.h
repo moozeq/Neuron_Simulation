@@ -66,7 +66,7 @@ class Camera
 	}
 
 	void processKeyboard(cam::CameraMovement direction, GLfloat deltaTime) {
-		float velocity = movementSpeed * deltaTime;
+		float velocity = movementSpeed * deltaTime * 1 / phy::timeFactor;
 		if (direction == cam::FORWARD)
 			position += front * velocity;
 		if (direction == cam::BACKWARD)

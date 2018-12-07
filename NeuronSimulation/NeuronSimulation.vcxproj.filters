@@ -47,6 +47,9 @@
     <ClInclude Include="ShaderProgram.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Ions.vert">
@@ -56,6 +59,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Ions.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Ions.comp">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

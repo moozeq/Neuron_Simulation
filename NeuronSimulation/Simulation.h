@@ -2,6 +2,7 @@
 #include "Utilities.h"
 #include "Config.h"
 #include "Camera.h"
+#include "Particle.h"
 
 class Simulation
 {
@@ -18,15 +19,17 @@ class Simulation
 	ShaderProgram* ionsRenderProgram;
 
 	GLuint NapIonsVAO;
-	GLuint NapIonsPos;
+	GLuint NapIonsPosBuf;
 	GLuint NapIonTexture;
 
-	float* NapIons;
+	std::vector<Particle> NapIons;
+	float* NapIonsPos;
 
 	void loadConfig(const Config& _config);
 	void setupOpenGL();
 	void setupInput();
 	void setupPrograms();
+	void setupStructures();
 	void setupBuffers();
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
@@ -35,11 +38,13 @@ class Simulation
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	bool updateFramebufferSize(int width, int height);
+	inline void updateIons();
+	inline void update();
+	inline void render();
 
 public:
 	Simulation(const Config& config);
 	~Simulation();
-	void render(double time);
 	void start(void);
 };
 

@@ -127,12 +127,14 @@
   <ItemGroup>
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Particle.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Simulation.h" />
     <ClInclude Include="STBImage.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Ions.comp" />
     <None Include="Ions.frag" />
     <None Include="Ions.geom" />
     <None Include="Ions.vert" />
