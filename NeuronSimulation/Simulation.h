@@ -10,6 +10,9 @@ class Simulation
 	Camera camera;
 	std::ofstream logfile;
 
+	double metricFactor;
+	double timeFactor;
+	double inversedTimeFactor;
 	int width;
 	int height;
 	double currentFrame;
@@ -22,8 +25,10 @@ class Simulation
 	GLuint NapIonsPosBuf;
 	GLuint NapIonTexture;
 
-	std::vector<Particle> NapIons;
+	std::vector<Particle> NapIons[2];
+	std::vector<double> accels;
 	float* NapIonsPos;
+	unsigned short bufferNum;
 
 	void loadConfig(const Config& _config);
 	void setupOpenGL();
@@ -38,6 +43,7 @@ class Simulation
 	static void framebufferSizeCallback(GLFWwindow* window, int width, int height);
 
 	bool updateFramebufferSize(int width, int height);
+
 	inline void updateIons();
 	inline void update();
 	inline void render();
@@ -46,5 +52,7 @@ public:
 	Simulation(const Config& config);
 	~Simulation();
 	void start(void);
+
+	double getDeltaTime(void) const;
 };
 

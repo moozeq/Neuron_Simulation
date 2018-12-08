@@ -11,6 +11,9 @@ extern "C" {
 int main(void)
 {
 	Config config;
+	config.metricFactor = 1e-9;
+	config.timeFactor = 1e-2;
+
 	config.width = 1200;
 	config.height = 800;
 	config.NapIonsNum = 1000;

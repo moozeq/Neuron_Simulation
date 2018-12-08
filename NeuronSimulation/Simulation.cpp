@@ -3,6 +3,10 @@
 void Simulation::loadConfig(const Config& _config)
 {
 	config = _config;
+	metricFactor = config.metricFactor;
+	timeFactor = config.timeFactor;
+	inversedTimeFactor = 1.0 / config.timeFactor;
+	bufferNum = 0;
 }
 
 void Simulation::setupOpenGL()
@@ -73,10 +77,16 @@ void Simulation::setupPrograms()
 
 void Simulation::setupStructures()
 {
-	NapIons.reserve(config.NapIonsNum);
-	for (size_t i = 0; i < config.NapIonsNum; ++i)
-		NapIons.push_back(Particle({GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), 0.0, 0.0, 0.0, phy::NapC, phy::NapM}));
-		//NapIons.push_back(Particle({GET_RAND_DOUBLE(-1.0, 1.0), GET_RAND_DOUBLE(-1.0, 1.0), 0.0, 0.0, 0.0, 0.0, phy::NapC, phy::NapM}));
+	NapIons[0].reserve(config.NapIonsNum);
+	NapIons[1].reserve(config.NapIonsNum);
+	for (size_t i = 0; i < config.NapIonsNum; ++i) {
+		Particle particle = Particle({ GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), 0.0, 0.0, 0.0, phy::NapC, phy::NapM, i });
+		NapIons[0].push_back(particle);
+		NapIons[1].push_back(particle);
+	}
+
+	accels.reserve(config.NapIonsNum * 3);
+	accels.resize(config.NapIonsNum * 3);
 }
 
 void Simulation::setupBuffers()
@@ -96,7 +106,7 @@ void Simulation::setupBuffers()
 	glCreateBuffers(1, &NapIonsPosBuf);
 
 	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-	GLsizei bufferSize = NapIons.size() * 3 * sizeof(GLfloat);
+	GLsizei bufferSize = config.NapIonsNum * 3 * sizeof(GLfloat);
 	glNamedBufferStorage(NapIonsPosBuf, bufferSize, nullptr, flags);
 	glVertexArrayVertexBuffer(NapIonsVAO, 0, NapIonsPosBuf, 0, 3 * sizeof(GL_FLOAT));
 	glVertexArrayAttribFormat(NapIonsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
@@ -119,16 +129,16 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 
 	Simulation* simulation = static_cast<Simulation*>(glfwGetWindowUserPointer(window));
 	if (key == GLFW_KEY_W && action == GLFW_PRESS)
-		simulation->camera.processKeyboard(cam::FORWARD, simulation->deltaTime);
+		simulation->camera.processKeyboard(cam::FORWARD, simulation->getDeltaTime());
 
 	if (key == GLFW_KEY_S && action == GLFW_PRESS)
-		simulation->camera.processKeyboard(cam::BACKWARD, simulation->deltaTime);
+		simulation->camera.processKeyboard(cam::BACKWARD, simulation->getDeltaTime());
 
 	if (key == GLFW_KEY_A && action == GLFW_PRESS)
-		simulation->camera.processKeyboard(cam::LEFT, simulation->deltaTime);
+		simulation->camera.processKeyboard(cam::LEFT, simulation->getDeltaTime());
 
 	if (key == GLFW_KEY_D && action == GLFW_PRESS)
-		simulation->camera.processKeyboard(cam::RIGHT, simulation->deltaTime);
+		simulation->camera.processKeyboard(cam::RIGHT, simulation->getDeltaTime());
 }
 
 void Simulation::mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
@@ -190,15 +200,23 @@ bool Simulation::updateFramebufferSize(int width, int height)
 
 inline void Simulation::updateIons()
 {
-	size_t j = 0;
-	for (Particle& currParticle : NapIons) {
-		double ax = 0.0;
-		double ay = 0.0;
-		double az = 0.0;
-		for (Particle& particle : NapIons) {
-			double dx = phy::metricFactor * (particle.x - currParticle.x);
-			double dy = phy::metricFactor * (particle.y - currParticle.y);
-			double dz = phy::metricFactor * (particle.z - currParticle.z);
+	const unsigned short nextBufferNum = (++bufferNum) % 2;
+	const long ionsSize = config.NapIonsNum;
+	
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = 0; i < ionsSize; ++i) {
+		Particle& currParticle = NapIons[bufferNum][i];
+		const size_t index = currParticle.index;
+		accels[index] = 0.0;
+		accels[index + 1] = 0.0;
+		accels[index + 2] = 0.0;
+
+		for (long j = 0; j < ionsSize; ++j) {
+			const Particle& particle = NapIons[bufferNum][j];
+			double dx = metricFactor * (particle.x - currParticle.x);
+			double dy = metricFactor * (particle.y - currParticle.y);
+			double dz = metricFactor * (particle.z - currParticle.z);
 
 			double d = cbrt(dx * dx + dy * dy + dz * dz);
 			if (d == 0.0)
@@ -206,23 +224,33 @@ inline void Simulation::updateIons()
 			double F = phy::k * currParticle.charge * particle.charge / d;
 			double a = F / currParticle.mass;
 
-			ax -= a * dx / d;
-			ay -= a * dy / d;
-			az -= a * dz / d;
+			accels[index] -= a * dx / d;
+			accels[index + 1] -= a * dy / d;
+			accels[index + 2] -= a * dz / d;
 		}
-		NapIonsPos[j++] = currParticle.x += currParticle.vx * deltaTime + ax * deltaTime * deltaTime / 2;
-		NapIonsPos[j++] = currParticle.y += currParticle.vy * deltaTime + ay * deltaTime * deltaTime / 2;
-		NapIonsPos[j++] = currParticle.z += currParticle.vz * deltaTime + az * deltaTime * deltaTime / 2;
+		currParticle.x += currParticle.vx * deltaTime + accels[index] * deltaTime * deltaTime / 2;
+		currParticle.y += currParticle.vy * deltaTime + accels[index + 1] * deltaTime * deltaTime / 2;
+		currParticle.z += currParticle.vz * deltaTime + accels[index + 2] * deltaTime * deltaTime / 2;
 
-		currParticle.vx += ax * deltaTime;
-		currParticle.vy += ay * deltaTime;
-		currParticle.vz += az * deltaTime;
+		currParticle.vx += accels[index] * deltaTime;
+		currParticle.vy += accels[index + 1] * deltaTime;
+		currParticle.vz += accels[index + 2] * deltaTime;
 	}
 }
 
 inline void Simulation::update()
 {
 	updateIons();
+	const long ionsSize = config.NapIonsNum;
+
+	for (long i = 0; i < ionsSize; ++i) {
+		Particle& currParticle = NapIons[bufferNum][i];
+		NapIonsPos[i] = currParticle.x;
+		NapIonsPos[i + 1] = currParticle.y;
+		NapIonsPos[i + 2] = currParticle.z;
+	}
+
+	++bufferNum %= 2;
 }
 
 void Simulation::render()
@@ -236,7 +264,7 @@ void Simulation::render()
 
 	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
 	glBindVertexArray(NapIonsVAO);
-	glDrawArrays(GL_POINTS, 0, NapIons.size());
+	glDrawArrays(GL_POINTS, 0, config.NapIonsNum);
 
 	glFlush();
 	glfwSwapBuffers(window);
@@ -270,7 +298,7 @@ void Simulation::start(void)
 	while (!glfwWindowShouldClose(window))
 	{
 		currentFrame = glfwGetTime();
-		deltaTime = phy::timeFactor * (currentFrame - lastFrame);
+		deltaTime = timeFactor * (currentFrame - lastFrame);
 		lastFrame = currentFrame;
 
 		// simulation logic
@@ -279,4 +307,9 @@ void Simulation::start(void)
 		// rendering
 		render();
 	}
+}
+
+double Simulation::getDeltaTime(void) const
+{
+	return inversedTimeFactor * deltaTime;
 }

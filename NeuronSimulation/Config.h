@@ -3,6 +3,9 @@
 
 struct Config
 {
+	double metricFactor;
+	double timeFactor;
+
 	int width;
 	int height;
 	size_t NapIonsNum;

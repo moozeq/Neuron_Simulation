@@ -3,8 +3,8 @@
 
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 2.5f;
-const float SENSITIVTY = 0.1f;
+const float SPEED = 0.5f;
+const float SENSITIVTY = 0.07f;
 const float ZOOM = 45.0f;
 
 namespace cam {
@@ -45,7 +45,7 @@ class Camera
 		up = glm::normalize(glm::cross(right, this->front));
 	}
 
-	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) :
+	Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW, float pitch = PITCH) :
 		front(glm::vec3(0.0f, 0.0f, -1.0f)), movementSpeed(SPEED), mouseSensitivity(SENSITIVTY), zoom(ZOOM)
 	{
 		this->position = position;
@@ -66,7 +66,7 @@ class Camera
 	}
 
 	void processKeyboard(cam::CameraMovement direction, GLfloat deltaTime) {
-		float velocity = movementSpeed * deltaTime * 1 / phy::timeFactor;
+		float velocity = movementSpeed * deltaTime;
 		if (direction == cam::FORWARD)
 			position += front * velocity;
 		if (direction == cam::BACKWARD)

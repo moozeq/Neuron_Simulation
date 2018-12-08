@@ -12,4 +12,6 @@ struct Particle
 
 	double charge;
 	double mass;
+
+	size_t index;
 };

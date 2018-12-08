@@ -40,8 +40,6 @@ namespace phy {
 
 	/* 1.0 in space is 1000nm */
 	/* 1.0 sec real time is 1ms */
-	constexpr double metricFactor = 1e-9;
-	constexpr double timeFactor = 1e-3;
 }
 
 
