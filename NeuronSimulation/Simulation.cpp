@@ -5,7 +5,9 @@ void Simulation::loadConfig(const Config& _config)
 	config = _config;
 	metricFactor = config.metricFactor;
 	timeFactor = config.timeFactor;
+
 	inversedTimeFactor = 1.0 / config.timeFactor;
+	particlesBufferSize = config.KpIonsNum + config.NapIonsNum + config.ClmIonsNum;
 	bufferNum = 0;
 }
 
@@ -77,16 +79,34 @@ void Simulation::setupPrograms()
 
 void Simulation::setupStructures()
 {
-	NapIons[0].reserve(config.NapIonsNum);
-	NapIons[1].reserve(config.NapIonsNum);
-	for (size_t i = 0; i < config.NapIonsNum; ++i) {
+	particles[0].reserve(particlesBufferSize);
+	particles[1].reserve(particlesBufferSize);
+	size_t i = 0;
+	size_t offset = 0;
+
+	offset += config.NapIonsNum;
+	while (i++ < offset) {
 		Particle particle = Particle({ GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), 0.0, 0.0, 0.0, phy::NapC, phy::NapM, i });
-		NapIons[0].push_back(particle);
-		NapIons[1].push_back(particle);
+		particles[0].push_back(particle);
+		particles[1].push_back(particle);
 	}
 
-	accels.reserve(config.NapIonsNum * 3);
-	accels.resize(config.NapIonsNum * 3);
+	offset += config.KpIonsNum;
+	while (i++ < offset) {
+		Particle particle = Particle({ GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), 0.0, 0.0, 0.0, phy::KpC, phy::KpM, i });
+		particles[0].push_back(particle);
+		particles[1].push_back(particle);
+	}
+
+	offset += config.ClmIonsNum;
+	while (i++ < offset) {
+		Particle particle = Particle({ GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), GET_RAND_DOUBLE(-0.10, 0.10), 0.0, 0.0, 0.0, phy::ClmC, phy::ClmM, i });
+		particles[0].push_back(particle);
+		particles[1].push_back(particle);
+	}
+
+	accels.reserve(particlesBufferSize * 3);
+	accels.resize(particlesBufferSize * 3);
 }
 
 void Simulation::setupBuffers()
@@ -94,6 +114,8 @@ void Simulation::setupBuffers()
 	// set const values as uniforms in shader program
 	ionsRenderProgram->use();
 	NapIonTexture = loadMipmapTexture(GL_TEXTURE0, config.NapIonTexturePath.c_str());
+	KpIonTexture = loadMipmapTexture(GL_TEXTURE0, config.KpIonTexturePath.c_str());
+	ClmIonTexture = loadMipmapTexture(GL_TEXTURE0, config.ClmIonTexturePath.c_str());
 	sh::Uniforms uniforms;
 	uniforms.ionRadius = config.ionRadius;
 	ionsRenderProgram->setUniforms(uniforms);
@@ -101,24 +123,41 @@ void Simulation::setupBuffers()
 
 	// create vaos
 	glCreateVertexArrays(1, &NapIonsVAO);
+	glCreateVertexArrays(1, &KpIonsVAO);
+	glCreateVertexArrays(1, &ClmIonsVAO);
 
 	// creating buffers
-	glCreateBuffers(1, &NapIonsPosBuf);
+	glCreateBuffers(1, &particlesPosBuf);
 
 	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-	GLsizei bufferSize = config.NapIonsNum * 3 * sizeof(GLfloat);
-	glNamedBufferStorage(NapIonsPosBuf, bufferSize, nullptr, flags);
-	glVertexArrayVertexBuffer(NapIonsVAO, 0, NapIonsPosBuf, 0, 3 * sizeof(GL_FLOAT));
+	GLsizei bufferSize = particlesBufferSize * 3 * sizeof(GLfloat);
+	size_t offset = 0;
+	glNamedBufferStorage(particlesPosBuf, bufferSize, nullptr, flags);
+
+	glVertexArrayVertexBuffer(NapIonsVAO, 0, particlesPosBuf, offset, 3 * sizeof(GL_FLOAT));
 	glVertexArrayAttribFormat(NapIonsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(NapIonsVAO, 0, 0);
 	glEnableVertexArrayAttrib(NapIonsVAO, 0);
+	offset += config.NapIonsNum;
+
+	glVertexArrayVertexBuffer(KpIonsVAO, 0, particlesPosBuf, offset, 3 * sizeof(GL_FLOAT));
+	glVertexArrayAttribFormat(KpIonsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(KpIonsVAO, 0, 0);
+	glEnableVertexArrayAttrib(KpIonsVAO, 0);
+	offset += config.KpIonsNum;
+
+	glVertexArrayVertexBuffer(ClmIonsVAO, 0, particlesPosBuf, offset, 3 * sizeof(GL_FLOAT));
+	glVertexArrayAttribFormat(ClmIonsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(ClmIonsVAO, 0, 0);
+	glEnableVertexArrayAttrib(ClmIonsVAO, 0);
+	offset += config.ClmIonsNum;
 
 	// initialize buffers in GPU and get pointers to them
-	NapIonsPos = (float*)glMapNamedBuffer(NapIonsPosBuf, GL_WRITE_ONLY);
-	if (!NapIonsPos)
+	particlesPos = (float*)glMapNamedBuffer(particlesPosBuf, GL_WRITE_ONLY);
+	if (!particlesPos)
 		throw("Buffer mapping failed");
 
-	glUnmapNamedBuffer(NapIonsPosBuf);
+	glUnmapNamedBuffer(particlesPosBuf);
 }
 
 void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -128,16 +167,16 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
 	Simulation* simulation = static_cast<Simulation*>(glfwGetWindowUserPointer(window));
-	if (key == GLFW_KEY_W && action == GLFW_PRESS)
+	if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.processKeyboard(cam::FORWARD, simulation->getDeltaTime());
 
-	if (key == GLFW_KEY_S && action == GLFW_PRESS)
+	if (key == GLFW_KEY_S && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.processKeyboard(cam::BACKWARD, simulation->getDeltaTime());
 
-	if (key == GLFW_KEY_A && action == GLFW_PRESS)
+	if (key == GLFW_KEY_A && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.processKeyboard(cam::LEFT, simulation->getDeltaTime());
 
-	if (key == GLFW_KEY_D && action == GLFW_PRESS)
+	if (key == GLFW_KEY_D && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.processKeyboard(cam::RIGHT, simulation->getDeltaTime());
 }
 
@@ -201,19 +240,19 @@ bool Simulation::updateFramebufferSize(int width, int height)
 inline void Simulation::updateIons()
 {
 	const unsigned short nextBufferNum = (++bufferNum) % 2;
-	const long ionsSize = config.NapIonsNum;
+	const long ionsBufferSize = particlesBufferSize;
 	
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
-	for (long i = 0; i < ionsSize; ++i) {
-		Particle& currParticle = NapIons[bufferNum][i];
+	for (long i = 0; i < ionsBufferSize; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
 		const size_t index = currParticle.index;
 		accels[index] = 0.0;
 		accels[index + 1] = 0.0;
 		accels[index + 2] = 0.0;
 
-		for (long j = 0; j < ionsSize; ++j) {
-			const Particle& particle = NapIons[bufferNum][j];
+		for (long j = 0; j < ionsBufferSize; ++j) {
+			const Particle& particle = particles[bufferNum][j];
 			double dx = metricFactor * (particle.x - currParticle.x);
 			double dy = metricFactor * (particle.y - currParticle.y);
 			double dz = metricFactor * (particle.z - currParticle.z);
@@ -241,13 +280,13 @@ inline void Simulation::updateIons()
 inline void Simulation::update()
 {
 	updateIons();
-	const long ionsSize = config.NapIonsNum;
+	const long ionsBufferSize = particlesBufferSize;
 
-	for (long i = 0; i < ionsSize; ++i) {
-		Particle& currParticle = NapIons[bufferNum][i];
-		NapIonsPos[i] = currParticle.x;
-		NapIonsPos[i + 1] = currParticle.y;
-		NapIonsPos[i + 2] = currParticle.z;
+	for (long i = 0; i < ionsBufferSize; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
+		particlesPos[i] = currParticle.x;
+		particlesPos[i + 1] = currParticle.y;
+		particlesPos[i + 2] = currParticle.z;
 	}
 
 	++bufferNum %= 2;
@@ -265,6 +304,14 @@ void Simulation::render()
 	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
 	glBindVertexArray(NapIonsVAO);
 	glDrawArrays(GL_POINTS, 0, config.NapIonsNum);
+
+	glBindTexture(GL_TEXTURE_2D, KpIonTexture);
+	glBindVertexArray(KpIonsVAO);
+	glDrawArrays(GL_POINTS, 0, config.KpIonsNum);
+
+	glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
+	glBindVertexArray(ClmIonsVAO);
+	glDrawArrays(GL_POINTS, 0, config.ClmIonsNum);
 
 	glFlush();
 	glfwSwapBuffers(window);

@@ -17,12 +17,14 @@ int main(void)
 	config.width = 1200;
 	config.height = 800;
 	config.NapIonsNum = 1000;
-	config.KpIonsNum = 10;
+	config.KpIonsNum = 1000;
+	config.ClmIonsNum = 2000;
 	config.logPath = "simulation.log";
 
 	config.ionRadius = 0.01;
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";
+	config.ClmIonTexturePath = "ClmIon.png";
 
 	config.channelRadius = 0.02;
 	config.NapChannelTexturePath = "NapChannel.png";

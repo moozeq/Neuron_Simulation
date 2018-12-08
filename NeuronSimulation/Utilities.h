@@ -34,6 +34,10 @@ namespace phy {
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 
+	constexpr double ClmR = 167e-12;
+	constexpr double ClmM = 58.0671408979e-27;
+	constexpr double ClmC = -1.0 * e;
+
 	constexpr double k = 1.2839342030e+8;
 	//constexpr double ENap = 1.5287557234539444552960119488831e+9;
 	//constexpr double EKp = 8.9036257854900781641547510319302e+8;

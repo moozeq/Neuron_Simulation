@@ -21,14 +21,21 @@ class Simulation
 	GLFWwindow* window;
 	ShaderProgram* ionsRenderProgram;
 
-	GLuint NapIonsVAO;
-	GLuint NapIonsPosBuf;
-	GLuint NapIonTexture;
+	GLuint particlesPosBuf;
 
-	std::vector<Particle> NapIons[2];
+	GLuint NapIonsVAO;
+	GLuint KpIonsVAO;
+	GLuint ClmIonsVAO;
+
+	GLuint NapIonTexture;
+	GLuint KpIonTexture;
+	GLuint ClmIonTexture;
+
+	std::vector<Particle> particles[2];
 	std::vector<double> accels;
-	float* NapIonsPos;
+	float* particlesPos;
 	unsigned short bufferNum;
+	size_t particlesBufferSize;
 
 	void loadConfig(const Config& _config);
 	void setupOpenGL();
