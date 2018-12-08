@@ -11,15 +11,15 @@ extern "C" {
 int main(void)
 {
 	Config config;
-	config.metricFactor = 1e-9;
-	config.timeFactor = 1e-3;
+	config.metricFactorSq = 1e-9;
+	config.timeFactor = 1e-10;
 
 	config.width = 1200;
 	config.height = 800;
-	config.NapIonsNum = 1000;
-	config.KpIonsNum = 1000;
+	config.NapIonsNum = 100;
+	config.KpIonsNum = 100;
 	config.ClmIonsNum = 0;
-	config.otherParticlesNum = 1;
+	config.otherParticlesNum = 0;
 	config.logPath = "simulation.log";
 
 	config.ionRadius = 0.0078125;

@@ -3,7 +3,7 @@
 void Simulation::loadConfig(const Config& _config)
 {
 	config = _config;
-	metricFactor = config.metricFactor;
+	metricFactorSq = config.metricFactorSq * config.metricFactorSq;
 	timeFactor = config.timeFactor;
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
@@ -83,6 +83,7 @@ void Simulation::setupStructures()
 {
 	particles[0].reserve(particlesBufferSize);
 	particles[1].reserve(particlesBufferSize);
+	partAccOrigin.reserve(particlesBufferSize);
 	size_t i = 0;
 	size_t offset = 0;
 
@@ -91,6 +92,7 @@ void Simulation::setupStructures()
 		Particle* particle = newParticle(0.1, par::NAP, i++);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
+		partAccOrigin.push_back(phy::NapA / metricFactorSq);
 		delete particle;
 	}
 
@@ -99,6 +101,7 @@ void Simulation::setupStructures()
 		Particle* particle = newParticle(0.1, par::KP, i++);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
+		partAccOrigin.push_back(phy::KpA / metricFactorSq);
 		delete particle;
 	}
 
@@ -107,6 +110,7 @@ void Simulation::setupStructures()
 		Particle* particle = newParticle(0.1, par::CLM, i++);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
+		partAccOrigin.push_back(phy::ClmA / metricFactorSq);
 		delete particle;
 	}
 
@@ -115,6 +119,7 @@ void Simulation::setupStructures()
 		Particle* particle = newParticle(0.1, par::MASSIVEION, i++);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
+		partAccOrigin.push_back((phy::k * particle->charge / particle->mass) / metricFactorSq);
 		delete particle;
 	}
 
@@ -256,46 +261,63 @@ bool Simulation::updateFramebufferSize(int width, int height)
 	return true;
 }
 
-inline void Simulation::updateIons()
+inline void Simulation::updateParticles()
 {
-	const unsigned short nextBufferNum = (++bufferNum) % 2;
+	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
 	const long ionsBufferSize = (long)particlesBufferSize;
 	
+	// parallelization can be done due to double buffering particles vector and accels[] vector
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
 	for (long i = 0; i < ionsBufferSize; ++i) {
 		Particle& currParticle = particles[bufferNum][i];
+		Particle& prevParticle = particles[nextBufferNum][i];
 
-		// all particles have 3 accels, ax, ay, az, that's why index * 3
-		const size_t accelIndex = currParticle.index * 3;
+		// all particles have 3 accels, ax, ay, az, that's why 'index * 3' in accels[]
+		// all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
+		const size_t index = currParticle.index;
+		const size_t tripledIndex = currParticle.index * 3;
+		const double partAccOriginDt = partAccOrigin[index] * deltaTime;
 
 		for (long j = 0; j < ionsBufferSize; ++j) {
-			const Particle& particle = particles[bufferNum][j];
-			double dx = metricFactor * (particle.x - currParticle.x);
-			double dy = metricFactor * (particle.y - currParticle.y);
-			double dz = metricFactor * (particle.z - currParticle.z);
+			const Particle& particle = particles[nextBufferNum][j];
 
-			double d = cbrt(dx * dx + dy * dy + dz * dz);
-			if (d == 0.0)
+			//same particle but in different buffer
+			if (i == j)
 				continue;
-			double F = phy::k * currParticle.charge * particle.charge / d;
-			double a = F / currParticle.mass;
 
-			accels[accelIndex] -= a * dx / d;
-			accels[accelIndex + 1] -= a * dy / d;
-			accels[accelIndex + 2] -= a * dz / d;
+			double dx = particle.x - currParticle.x;
+			double dy = particle.y - currParticle.y;
+			double dz = particle.z - currParticle.z;
+
+			// distance between 2 particles squared (d - distance, Sq - squared)
+			double dSq = dx * dx + dy * dy + dz * dz;
+			if (dSq == 0.0)
+				continue;
+
+			// part of acceleration which depends on other particle's charge and distance
+			double partAccOther = particle.charge / dSq;
+
+			accels[tripledIndex + 0] -= partAccOther * dx;
+			accels[tripledIndex + 1] -= partAccOther * dy;
+			accels[tripledIndex + 2] -= partAccOther * dz;
 		}
-		currParticle.x += currParticle.vx * deltaTime + accels[accelIndex] * deltaTime * deltaTime / 2;
-		currParticle.y += currParticle.vy * deltaTime + accels[accelIndex + 1] * deltaTime * deltaTime / 2;
-		currParticle.z += currParticle.vz * deltaTime + accels[accelIndex + 2] * deltaTime * deltaTime / 2;
 
-		currParticle.vx += accels[accelIndex] * deltaTime;
-		currParticle.vy += accels[accelIndex + 1] * deltaTime;
-		currParticle.vz += accels[accelIndex + 2] * deltaTime;
+		// muliply by part of acceleration which depends on current particle
+		double axdt = accels[tripledIndex + 0] * partAccOriginDt;
+		double aydt = accels[tripledIndex + 1] * partAccOriginDt;
+		double azdt = accels[tripledIndex + 2] * partAccOriginDt;
 
-		particlesPos[accelIndex] = (float)currParticle.x;
-		particlesPos[accelIndex + 1] = (float)currParticle.y;
-		particlesPos[accelIndex + 2] = (float)currParticle.z;
+		// update position and coordinates: x = x0 + vx0 * dt + ax * dt^2 / 2
+		// 'axdt = ax * dt' so optimized equation: x += dt * (vx0 + axdt / 2)
+		particlesPos[tripledIndex + 0] = currParticle.x = prevParticle.x + deltaTime * (currParticle.vx + axdt / 2);
+		particlesPos[tripledIndex + 1] = currParticle.y = prevParticle.y + deltaTime * (currParticle.vy + aydt / 2);
+		particlesPos[tripledIndex + 2] = currParticle.z = prevParticle.z + deltaTime * (currParticle.vz + azdt / 2);
+
+		// update velocities: vx = vx0 + ax * dt
+		currParticle.vx += axdt;
+		currParticle.vy += aydt;
+		currParticle.vz += azdt;
 	}
 }
 
@@ -306,12 +328,15 @@ inline void Simulation::update()
 
 	// erase accels vector
 	std::fill(accels.begin(), accels.end(), 0);
-	updateIons();
 
+	// update particles in current vector and positions buffer
+	updateParticles();
+
+	// swap to next particles vector
 	++bufferNum %= 2;
 }
 
-void Simulation::render()
+inline void Simulation::render()
 {
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

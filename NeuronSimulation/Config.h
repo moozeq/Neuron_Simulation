@@ -3,7 +3,7 @@
 
 struct Config
 {
-	double metricFactor;
+	double metricFactorSq;
 	double timeFactor;
 
 	int width;

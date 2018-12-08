@@ -65,4 +65,18 @@
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="NapIon.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="otherParticles.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="ClmIon.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="KpIon.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
 </Project>

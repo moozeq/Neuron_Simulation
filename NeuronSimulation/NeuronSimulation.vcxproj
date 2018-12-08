@@ -154,6 +154,12 @@
     <None Include="Ions.geom" />
     <None Include="Ions.vert" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="ClmIon.png" />
+    <Image Include="KpIon.png" />
+    <Image Include="NapIon.png" />
+    <Image Include="otherParticles.png" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

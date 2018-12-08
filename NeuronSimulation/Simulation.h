@@ -10,7 +10,7 @@ class Simulation
 	Camera camera;
 	std::ofstream logfile;
 
-	double metricFactor;
+	double metricFactorSq;
 	double timeFactor;
 	double inversedTimeFactor;
 	int width;
@@ -37,6 +37,7 @@ class Simulation
 
 	std::vector<Particle> particles[2];
 	std::vector<double> accels;
+	std::vector<double> partAccOrigin;
 	float* particlesPos;
 	unsigned short bufferNum;
 	size_t particlesBufferSize;
@@ -55,7 +56,7 @@ class Simulation
 
 	bool updateFramebufferSize(int width, int height);
 
-	inline void updateIons();
+	inline void updateParticles();
 	inline void update();
 	inline void render();
 

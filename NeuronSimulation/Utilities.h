@@ -26,21 +26,25 @@ namespace phy {
 	/* Na+ channel width:			0.45 nm					*/
 	/* K+ channel width:			1.5 nm					*/
 	constexpr double e = 1.60218e-19;
+	constexpr double k = 1.2839342030e+8;
+	constexpr double u1 = 1.6605389274e-27;
 
 	constexpr double NapR = 116e-12;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
+	constexpr double NapA = k * NapC / NapM;
 
 	constexpr double KpR = 152e-12;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
+	constexpr double KpA = k * KpC / KpM;
 
 	constexpr double ClmR = 167e-12;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
+	constexpr double ClmA = k * ClmC / ClmM;
 
-	constexpr double k = 1.2839342030e+8;
-	constexpr double u1 = 1.6605389274e-27;
+
 }
 
 static Particle* newParticle(double boundaries, par::ParType type, size_t _index) {
