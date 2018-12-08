@@ -65,7 +65,7 @@ class Camera
 		updateCameraVectors();
 	}
 
-	void processKeyboard(cam::CameraMovement direction, GLfloat deltaTime) {
+	void processKeyboard(cam::CameraMovement direction, GLdouble deltaTime) {
 		float velocity = movementSpeed * deltaTime;
 		if (direction == cam::FORWARD)
 			position += front * velocity;

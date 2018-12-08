@@ -11,14 +11,16 @@ struct Config
 	size_t NapIonsNum;
 	size_t KpIonsNum;
 	size_t ClmIonsNum;
+	size_t otherParticlesNum;
 	std::string logPath;
 
-	double ionRadius;
+	float ionRadius;
 	std::string NapIonTexturePath;
 	std::string KpIonTexturePath;
 	std::string ClmIonTexturePath;
+	std::string otherParticlesTexturePath;
 
-	double channelRadius;
+	float channelRadius;
 	std::string NapChannelTexturePath;
 	std::string KpChannelTexturePath;
 };

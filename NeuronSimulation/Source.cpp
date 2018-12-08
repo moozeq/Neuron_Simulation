@@ -12,19 +12,21 @@ int main(void)
 {
 	Config config;
 	config.metricFactor = 1e-9;
-	config.timeFactor = 1e-2;
+	config.timeFactor = 1e-3;
 
 	config.width = 1200;
 	config.height = 800;
-	config.NapIonsNum = 10000;
+	config.NapIonsNum = 1000;
 	config.KpIonsNum = 1000;
-	config.ClmIonsNum = 1000;
+	config.ClmIonsNum = 0;
+	config.otherParticlesNum = 1;
 	config.logPath = "simulation.log";
 
-	config.ionRadius = 0.01;
+	config.ionRadius = 0.0078125;
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";
 	config.ClmIonTexturePath = "ClmIon.png";
+	config.otherParticlesTexturePath = "otherParticles.png";
 
 	config.channelRadius = 0.02;
 	config.NapChannelTexturePath = "NapChannel.png";

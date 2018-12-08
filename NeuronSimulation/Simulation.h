@@ -26,10 +26,12 @@ class Simulation
 	GLuint NapIonsVAO;
 	GLuint KpIonsVAO;
 	GLuint ClmIonsVAO;
+	GLuint otherParticlesVAO;
 
 	GLuint NapIonTexture;
 	GLuint KpIonTexture;
 	GLuint ClmIonTexture;
+	GLuint otherParticlesTexture;
 
 	GLuint particlesPosBuf;
 
@@ -65,4 +67,3 @@ public:
 
 	double getDeltaTime(void) const;
 };
-

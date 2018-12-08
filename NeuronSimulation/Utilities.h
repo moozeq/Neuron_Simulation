@@ -13,6 +13,7 @@
 
 #include "STBImage.h"
 #include "ShaderProgram.h"
+#include "Particle.h"
 
 #define GET_RAND_DOUBLE(min, max) ((max - min) * ( (double)rand() / (double)RAND_MAX ) + min)
 
@@ -39,13 +40,48 @@ namespace phy {
 	constexpr double ClmC = -1.0 * e;
 
 	constexpr double k = 1.2839342030e+8;
-	//constexpr double ENap = 1.5287557234539444552960119488831e+9;
-	//constexpr double EKp = 8.9036257854900781641547510319302e+8;
-
-	/* 1.0 in space is 1000nm */
-	/* 1.0 sec real time is 1ms */
+	constexpr double u1 = 1.6605389274e-27;
 }
 
+static Particle* newParticle(double boundaries, par::ParType type, size_t _index) {
+	Particle* particle = new Particle();
+	particle->vx = 0.0;
+	particle->vy = 0.0;
+	particle->vz = 0.0;
+	particle->x = GET_RAND_DOUBLE(-boundaries, boundaries);
+	particle->y = GET_RAND_DOUBLE(-boundaries, boundaries);
+	particle->z = GET_RAND_DOUBLE(-boundaries, boundaries);
+
+	switch (type) {
+	case par::NAP:
+		particle->charge = phy::NapC;
+		particle->mass = phy::NapM;
+		break;
+
+	case par::KP:
+		particle->charge = phy::KpC;
+		particle->mass = phy::KpM;
+		break;
+
+	case par::CLM:
+		particle->charge = phy::ClmC;
+		particle->mass = phy::ClmM;
+		break;
+
+	case par::MASSIVEION:
+		particle->charge = 10000 * phy::ClmC;
+		particle->mass = 1e10 * phy::ClmM;
+		break;
+
+	default:
+		particle->charge = 0.0;
+		particle->mass = phy::u1;
+		break;
+	}
+
+	particle->index = _index;
+	return particle;
+}
 
 static void log(std::ofstream& stream, std::string prompt)
 {
