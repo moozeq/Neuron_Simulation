@@ -16,9 +16,9 @@ int main(void)
 
 	config.width = 1200;
 	config.height = 800;
-	config.NapIonsNum = 1000;
+	config.NapIonsNum = 10000;
 	config.KpIonsNum = 1000;
-	config.ClmIonsNum = 2000;
+	config.ClmIonsNum = 1000;
 	config.logPath = "simulation.log";
 
 	config.ionRadius = 0.01;

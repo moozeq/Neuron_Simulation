@@ -15,13 +15,13 @@ class Simulation
 	double inversedTimeFactor;
 	int width;
 	int height;
+	bool ice;
 	double currentFrame;
 	double lastFrame;
 	double deltaTime;
 	GLFWwindow* window;
-	ShaderProgram* ionsRenderProgram;
 
-	GLuint particlesPosBuf;
+	ShaderProgram* ionsRenderProgram;
 
 	GLuint NapIonsVAO;
 	GLuint KpIonsVAO;
@@ -30,6 +30,8 @@ class Simulation
 	GLuint NapIonTexture;
 	GLuint KpIonTexture;
 	GLuint ClmIonTexture;
+
+	GLuint particlesPosBuf;
 
 	std::vector<Particle> particles[2];
 	std::vector<double> accels;
@@ -59,6 +61,7 @@ public:
 	Simulation(const Config& config);
 	~Simulation();
 	void start(void);
+	void freeze(void);
 
 	double getDeltaTime(void) const;
 };

@@ -9,6 +9,7 @@ void Simulation::loadConfig(const Config& _config)
 	inversedTimeFactor = 1.0 / config.timeFactor;
 	particlesBufferSize = config.KpIonsNum + config.NapIonsNum + config.ClmIonsNum;
 	bufferNum = 0;
+	ice = false;
 }
 
 void Simulation::setupOpenGL()
@@ -44,6 +45,11 @@ void Simulation::setupOpenGL()
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
+	//glEnable(GL_CULL_FACE);
+	//glCullFace(GL_BACK);
+
+	int integ;
+	glGetIntegerv(GL_MAX_GEOMETRY_OUTPUT_VERTICES, &integ);
 
 	glViewport(0, 0, width, height);
 
@@ -167,6 +173,10 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
 	Simulation* simulation = static_cast<Simulation*>(glfwGetWindowUserPointer(window));
+
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+		simulation->freeze();
+
 	if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.processKeyboard(cam::FORWARD, simulation->getDeltaTime());
 
@@ -279,6 +289,9 @@ inline void Simulation::updateIons()
 
 inline void Simulation::update()
 {
+	if (ice)
+		return;
+
 	updateIons();
 	const long ionsBufferSize = particlesBufferSize;
 
@@ -354,6 +367,11 @@ void Simulation::start(void)
 		// rendering
 		render();
 	}
+}
+
+void Simulation::freeze(void)
+{
+	ice = true;
 }
 
 double Simulation::getDeltaTime(void) const
