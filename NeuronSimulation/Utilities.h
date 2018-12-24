@@ -15,8 +15,6 @@
 #include "ShaderProgram.h"
 #include "Particle.h"
 
-#define GET_RAND_DOUBLE(min, max) ((max - min) * ( (double)rand() / (double)RAND_MAX ) + min)
-
 namespace phy {
 	/* physics consts:										*/
 	/* epsilonR, water in 36.6:		~70.0					*/
@@ -43,37 +41,39 @@ namespace phy {
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;
-
-
 }
 
-static Particle* newParticle(double boundaries, par::ParType type, size_t _index) {
+static inline double getRandDouble(double min, double max) {
+	return ((max - min) * ((double)rand() / (double)RAND_MAX) + min);
+}
+
+static Particle* newParticle(double boundaries, particle::Type type) {
 	Particle* particle = new Particle();
 	particle->vx = 0.0;
 	particle->vy = 0.0;
 	particle->vz = 0.0;
-	particle->x = GET_RAND_DOUBLE(-boundaries, boundaries);
-	particle->y = GET_RAND_DOUBLE(-boundaries, boundaries);
-	particle->z = GET_RAND_DOUBLE(-boundaries, boundaries);
+	particle->x = getRandDouble(-boundaries, boundaries);
+	particle->y = getRandDouble(-boundaries, boundaries);
+	particle->z = getRandDouble(-boundaries, boundaries);
 
 	switch (type) {
-	case par::NAP:
+	case particle::NAP:
 		particle->charge = phy::NapC;
 		particle->mass = phy::NapM;
 		break;
 
-	case par::KP:
+	case particle::KP:
 		particle->charge = phy::KpC;
 		particle->mass = phy::KpM;
 		break;
 
-	case par::CLM:
+	case particle::CLM:
 		particle->charge = phy::ClmC;
 		particle->mass = phy::ClmM;
 		break;
 
-	case par::MASSIVEION:
-		particle->charge = 10000 * phy::ClmC;
+	case particle::MASSIVEION:
+		particle->charge = 1e5 * phy::ClmC;
 		particle->mass = 1e10 * phy::ClmM;
 		break;
 
@@ -83,7 +83,21 @@ static Particle* newParticle(double boundaries, par::ParType type, size_t _index
 		break;
 	}
 
-	particle->index = _index;
+	return particle;
+}
+
+static Particle* newParticle(double boundaries, double charge, double mass) {
+	Particle* particle = new Particle();
+	particle->vx = 0.0;
+	particle->vy = 0.0;
+	particle->vz = 0.0;
+	particle->x = getRandDouble(-boundaries, boundaries);
+	particle->y = getRandDouble(-boundaries, boundaries);
+	particle->z = getRandDouble(-boundaries, boundaries);
+
+	particle->charge = charge;
+	particle->mass = mass;
+
 	return particle;
 }
 

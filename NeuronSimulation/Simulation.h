@@ -3,51 +3,98 @@
 #include "Config.h"
 #include "Camera.h"
 #include "Particle.h"
+#include "Channel.h"
+#include "Neuron.h"
 
 class Simulation
 {
-	Config config;
-	Camera camera;
-	std::ofstream logfile;
 
+/* -----------------SIMULATION CONFIG----------------- */
+
+	// current camera
+	Camera camera;
+
+	// const config variables
+	Config config;
+	std::ofstream logfile;
 	double metricFactorSq;
-	double timeFactor;
 	double inversedTimeFactor;
+	unsigned short bufferNum;
 	int width;
 	int height;
+
+	// runtime config variables
 	bool ice;
+	bool rewind;
+	double timeFactor;
 	double currentFrame;
 	double lastFrame;
 	double deltaTime;
+
+	// opengl window struct
 	GLFWwindow* window;
 
+/* -----------------PARTICLES----------------- */
+
+	// particles rendering program
 	ShaderProgram* ionsRenderProgram;
 
+	// particles VAOs
 	GLuint NapIonsVAO;
 	GLuint KpIonsVAO;
 	GLuint ClmIonsVAO;
 	GLuint otherParticlesVAO;
 
+	// particles textures
 	GLuint NapIonTexture;
 	GLuint KpIonTexture;
 	GLuint ClmIonTexture;
 	GLuint otherParticlesTexture;
 
-	GLuint particlesPosBuf;
-
+	// particles structs
 	std::vector<Particle> particles[2];
-	std::vector<double> accels;
 	std::vector<double> partAccOrigin;
-	float* particlesPos;
-	unsigned short bufferNum;
 	size_t particlesBufferSize;
+	GLuint particlesPosBuf;
+	float* particlesPos;
+
+/* -----------------CHANNELS----------------- */
+
+	// channels rendering program
+	ShaderProgram* channelsRenderProgram;
+
+	// channels VAOs
+	GLuint NapIonsChannelsVAO;
+	GLuint KpIonsChannelsVAO;
+
+	// channels textures
+	GLuint NapIonChannelTexture[channel::STATES_COUNT];
+	GLuint KpIonChannelTexture[channel::STATES_COUNT];
+
+	// channels structs
+	std::vector<Channel> channels;
+	size_t channelsBufferSize;
+	GLuint channelsPosBuf;
+	float* channelsPos;
+
+/* -----------------NEURON----------------- */
+
+	// neuron struct
+	Neuron* neuron;
+
+/* -----------------PRIVATE METHODS----------------- */
 
 	void loadConfig(const Config& _config);
 	void setupOpenGL();
 	void setupInput();
 	void setupPrograms();
 	void setupStructures();
+	void setupNeuronStructures();
+	void setupParticlesStructures();
+	void setupChannelsStructures();
+	void setupTextures();
 	void setupBuffers();
+
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 	static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos);
@@ -56,15 +103,20 @@ class Simulation
 
 	bool updateFramebufferSize(int width, int height);
 
-	inline void updateParticles();
+	inline void updateChannelsStates();
+	inline void updateParticlesPositions();
 	inline void update();
 	inline void render();
 
 public:
+
+/* -----------------PUBLIC METHODS----------------- */
+
 	Simulation(const Config& config);
 	~Simulation();
 	void start(void);
 	void freeze(void);
+	void reverse(void);
 
 	double getDeltaTime(void) const;
 };

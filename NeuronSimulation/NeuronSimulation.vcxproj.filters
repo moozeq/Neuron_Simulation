@@ -27,6 +27,15 @@
     <ClCompile Include="Simulation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Channel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Barrier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Neuron.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Simulation.h">
@@ -50,6 +59,15 @@
     <ClInclude Include="Particle.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Channel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Barrier.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Neuron.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="Ions.vert">
@@ -62,6 +80,21 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="Ions.comp">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Barriers.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Barriers.frag">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Channels.vert">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Channels.geom">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="Channels.frag">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

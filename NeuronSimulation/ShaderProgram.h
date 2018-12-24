@@ -1,7 +1,7 @@
 #pragma once
 #include "Utilities.h"
 
-namespace sh {
+namespace shader {
 	/*
 	VF = vert + frag
 	VFG = vert + frag + geo
@@ -92,19 +92,23 @@ class ShaderProgram
 	}
 
 public:
-	ShaderProgram(const sh::ShadersTypes types, const std::vector<const GLchar*>& shadersPaths) {
+	ShaderProgram(const shader::ShadersTypes types, const std::vector<const GLchar*>& shadersPaths) {
 		id = glCreateProgram();
-
+		
 		switch (types) {
-		case sh::VF:
-			addShader(shadersPaths[sh::VERT], GL_VERTEX_SHADER);
-			addShader(shadersPaths[sh::FRAG], GL_FRAGMENT_SHADER);
+		case shader::VF:
+			if (shadersPaths.size() != 2)
+				throw std::exception("Invalid shadersPaths (VF)");
+			addShader(shadersPaths[0], GL_VERTEX_SHADER);
+			addShader(shadersPaths[1], GL_FRAGMENT_SHADER);
 			break;
 
-		case sh::VFG:
-			addShader(shadersPaths[sh::VERT], GL_VERTEX_SHADER);
-			addShader(shadersPaths[sh::GEO], GL_GEOMETRY_SHADER);
-			addShader(shadersPaths[sh::FRAG], GL_FRAGMENT_SHADER);
+		case shader::VFG:
+			if (shadersPaths.size() != 3)
+				throw std::exception("Invalid shadersPaths (VFG)");
+			addShader(shadersPaths[0], GL_VERTEX_SHADER);
+			addShader(shadersPaths[1], GL_GEOMETRY_SHADER);
+			addShader(shadersPaths[2], GL_FRAGMENT_SHADER);
 			break;
 		}
 
@@ -138,7 +142,7 @@ public:
 	}
 
 	// setting uniforms
-	void setUniforms(sh::Uniforms& uniforms) {
+	void setUniforms(shader::Uniforms& uniforms) {
 		glUniform1f(ionRadiusLoc, uniforms.ionRadius);
 		glUniform1f(channelRadiusLoc, uniforms.channelRadius);
 		glUniform1i(NapIonTextureLoc, uniforms.NapIonTexture);

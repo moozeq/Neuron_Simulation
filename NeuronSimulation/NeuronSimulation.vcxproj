@@ -136,12 +136,18 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Barrier.cpp" />
+    <ClCompile Include="Channel.cpp" />
+    <ClCompile Include="Neuron.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Barrier.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Channel.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Neuron.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Simulation.h" />
@@ -149,6 +155,11 @@
     <ClInclude Include="Utilities.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Barriers.frag" />
+    <None Include="Barriers.vert" />
+    <None Include="Channels.frag" />
+    <None Include="Channels.geom" />
+    <None Include="Channels.vert" />
     <None Include="Ions.comp" />
     <None Include="Ions.frag" />
     <None Include="Ions.geom" />

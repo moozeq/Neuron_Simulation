@@ -2,10 +2,7 @@
 
 void Simulation::loadConfig(const Config& _config)
 {
-	// copy config struct
 	config = _config;
-
-	// set variables based on config struct
 	metricFactorSq = config.metricFactorSq * config.metricFactorSq;
 	timeFactor = config.timeFactor;
 
@@ -13,7 +10,6 @@ void Simulation::loadConfig(const Config& _config)
 	particlesBufferSize = config.KpIonsNum + config.NapIonsNum + config.ClmIonsNum + config.otherParticlesNum;
 	bufferNum = 0;
 	ice = false;
-	rewind = false;
 }
 
 void Simulation::setupOpenGL()
@@ -21,13 +17,13 @@ void Simulation::setupOpenGL()
 	// log info about client
 	logfile.open(config.logPath, std::ofstream::app | std::ofstream::binary);
 	if (!logfile.good())
-		throw std::exception("Couldn't open log file");
+		throw("Couldn't open log file");
 
 	// setup client's openGL components
 	log(logfile, "--- Simulation initialization's started ---");
 
 	if (glfwInit() != GL_TRUE)
-		throw std::exception("GLFW initialization's failed");
+		throw("GLFW initialization's failed");
 
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
@@ -37,13 +33,13 @@ void Simulation::setupOpenGL()
 
 	window = glfwCreateWindow(width, height, "ProjectN", nullptr, nullptr);
 	if (window == nullptr)
-		throw std::exception("GLFW window couldn't be created");
+		throw("GLFW window couldn't be created");
 	glfwMakeContextCurrent(window);
 
 	// new glew functions usage
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
-		throw std::exception("GLEW initialization's failed");
+		throw("GLEW initialization's failed");
 
 	// enable alpha channel in textures
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -77,29 +73,10 @@ void Simulation::setupPrograms()
 		   "Ions.geom",
 		   "Ions.frag"
 		});
-	ionsRenderProgram = new ShaderProgram(shader::VFG, ionsPaths);
-
-	std::vector<const GLchar*> channelsPaths({
-		   "Channels.vert",
-		   "Channels.geom",
-		   "Channels.frag"
-		});
-	channelsRenderProgram = new ShaderProgram(shader::VFG, channelsPaths);
+	ionsRenderProgram = new ShaderProgram(sh::VFG, ionsPaths);
 }
 
 void Simulation::setupStructures()
-{
-	setupNeuronStructures();
-	setupParticlesStructures();
-	setupChannelsStructures();
-}
-
-void Simulation::setupNeuronStructures()
-{
-	neuron = new Neuron();
-}
-
-void Simulation::setupParticlesStructures()
 {
 	particles[0].reserve(particlesBufferSize);
 	particles[1].reserve(particlesBufferSize);
@@ -109,7 +86,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.NapIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::NAP);
+		Particle* particle = newParticle(0.1, par::NAP);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::NapA / metricFactorSq);
@@ -119,7 +96,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.KpIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::KP);
+		Particle* particle = newParticle(0.1, par::KP);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::KpA / metricFactorSq);
@@ -129,7 +106,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.ClmIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::CLM);
+		Particle* particle = newParticle(0.1, par::CLM);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::ClmA / metricFactorSq);
@@ -139,7 +116,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.otherParticlesNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::MASSIVEION);
+		Particle* particle = newParticle(0.1, par::MASSIVEION);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back((phy::k * particle->charge / particle->mass) / metricFactorSq);
@@ -148,49 +125,19 @@ void Simulation::setupParticlesStructures()
 	}
 }
 
-void Simulation::setupChannelsStructures()
+void Simulation::setupBuffers()
 {
-}
-
-void Simulation::setupTextures()
-{
-
 	// set const values as uniforms in shader program
-	shader::Uniforms uniforms;
-	uniforms.ionRadius = config.ionRadius;
-	uniforms.channelRadius = config.channelRadius;
-
-	// ions
 	ionsRenderProgram->use();
-
-	// load textures
 	NapIonTexture = loadMipmapTexture(GL_TEXTURE0, config.NapIonTexturePath.c_str());
 	KpIonTexture = loadMipmapTexture(GL_TEXTURE0, config.KpIonTexturePath.c_str());
 	ClmIonTexture = loadMipmapTexture(GL_TEXTURE0, config.ClmIonTexturePath.c_str());
 	otherParticlesTexture = loadMipmapTexture(GL_TEXTURE0, config.otherParticlesTexturePath.c_str());
-
-	// set uniforms
+	sh::Uniforms uniforms;
+	uniforms.ionRadius = config.ionRadius;
 	ionsRenderProgram->setUniforms(uniforms);
 	glUseProgram(0);
 
-
-
-	// channels
-	channelsRenderProgram->use();
-
-	// load textures
-	for (int i = 0; i < channel::STATES_COUNT; ++i)
-		NapIonChannelTexture[i] = loadMipmapTexture(GL_TEXTURE0, config.NapChannelTexturePath[i].c_str());
-	for (int i = 0; i < channel::STATES_COUNT; ++i)
-		KpIonChannelTexture[i] = loadMipmapTexture(GL_TEXTURE0, config.KpChannelTexturePath[i].c_str());
-	
-	// set uniforms
-	channelsRenderProgram->setUniforms(uniforms);
-	glUseProgram(0);
-}
-
-void Simulation::setupBuffers()
-{
 	// create vaos
 	glCreateVertexArrays(1, &NapIonsVAO);
 	glCreateVertexArrays(1, &KpIonsVAO);
@@ -227,7 +174,7 @@ void Simulation::setupBuffers()
 	// initialize buffers in GPU and get pointers to them
 	particlesPos = (float*)glMapNamedBuffer(particlesPosBuf, GL_WRITE_ONLY);
 	if (!particlesPos)
-		throw std::exception("Buffer mapping failed");
+		throw("Buffer mapping failed");
 
 	glUnmapNamedBuffer(particlesPosBuf);
 }
@@ -240,54 +187,23 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 
 	Simulation* simulation = static_cast<Simulation*>(glfwGetWindowUserPointer(window));
 
-	// F - freeze
-	if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+	if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
 		simulation->freeze();
-		log(simulation->logfile, "[*] Simulation freezed = " + std::to_string(simulation->ice));
-	}
 
-	// R - reverse
-	if (key == GLFW_KEY_R && action == GLFW_PRESS) {
-		simulation->reverse();
-		log(simulation->logfile, "[~] Simulation rewind = " + std::to_string(simulation->rewind));
-	}
-
-	// UP - camera speed + 20%
-	if (key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+	if (key == GLFW_KEY_PERIOD && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.movementSpeed *= 1.2f;
-		log(simulation->logfile, "[+] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
-	}
 
-	// DOWN - amera speed - 20%
-	if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+	if (key == GLFW_KEY_COMMA && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.movementSpeed *= 0.8f;
-		log(simulation->logfile, "[-] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
-	}
 
-	// TODO lock current simulation state before changing timeFactor
-	// RIGHT - time speed + 20%
-	if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+	if (key == GLFW_KEY_L && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->timeFactor *= 1.2f;
-		std::ostringstream timeFactor;
-		timeFactor << simulation->timeFactor;
-		log(simulation->logfile, "[+] Time factor = " + timeFactor.str());
 
-		// after changing time factor needs to change movement speed
-		simulation->camera.movementSpeed *= 0.8f;
-		log(simulation->logfile, "[-] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
-	}
-
-	// LEFT - time speed - 20%
-	if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+	if (key == GLFW_KEY_K && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->timeFactor *= 0.8f;
-		std::ostringstream timeFactor;
-		timeFactor << simulation->timeFactor;
-		log(simulation->logfile, "[-] Time factor = " + timeFactor.str());
 
-		// after changing time factor needs to change movement speed
-		simulation->camera.movementSpeed *= 1.2f;
-		log(simulation->logfile, "[+] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
-	}
+	if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
+		simulation->camera.processKeyboard(cam::FORWARD, simulation->getDeltaTime());
 
 	if (key == GLFW_KEY_W && (action == GLFW_PRESS || action == GLFW_REPEAT))
 		simulation->camera.processKeyboard(cam::FORWARD, simulation->getDeltaTime());
@@ -358,12 +274,7 @@ bool Simulation::updateFramebufferSize(int width, int height)
 	return true;
 }
 
-inline void Simulation::updateChannelsStates()
-{
-
-}
-
-inline void Simulation::updateParticlesPositions()
+inline void Simulation::updateParticles()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
 	const long ionsBufferSize = (long)particlesBufferSize;
@@ -426,60 +337,22 @@ inline void Simulation::updateParticlesPositions()
 			az -= partAccOther * dz;
 		}
 
-		// old coordinates
-		float ox = prevParticle.x;
-		float oy = prevParticle.y;
-		float oz = prevParticle.z;
-
 		// muliply by part of acceleration which depends on current particle
 		double axdt = ax * partAccOriginDt;
 		double aydt = ay * partAccOriginDt;
 		double azdt = az * partAccOriginDt;
 
-		// new coordinates
-		// new coordinates: x = x0 + vx0 * dt + ax * dt^2 / 2
-		// 'axdt = ax * dt' so optimized equation: x += dt * (vx0 + axdt / 2)
-		float nx = ox + deltaTime * (currParticle.vx + axdt / 2);
-		float ny = oy + deltaTime * (currParticle.vy + aydt / 2);
-		float nz = oz + deltaTime * (currParticle.vz + azdt / 2);
-
 		// all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
-		particlesPos[i * 3 + 0] = currParticle.x = nx;
-		particlesPos[i * 3 + 1] = currParticle.y = ny;
-		particlesPos[i * 3 + 2] = currParticle.z = nz;
+		// update position and coordinates: x = x0 + vx0 * dt + ax * dt^2 / 2
+		// 'axdt = ax * dt' so optimized equation: x += dt * (vx0 + axdt / 2)
+		particlesPos[i * 3 + 0] = currParticle.x = prevParticle.x + deltaTime * (currParticle.vx + axdt / 2);
+		particlesPos[i * 3 + 1] = currParticle.y = prevParticle.y + deltaTime * (currParticle.vy + aydt / 2);
+		particlesPos[i * 3 + 2] = currParticle.z = prevParticle.z + deltaTime * (currParticle.vz + azdt / 2);
 
 		// update velocities: vx = vx0 + ax * dt
 		currParticle.vx += axdt;
 		currParticle.vy += aydt;
 		currParticle.vz += azdt;
-
-		// collision detection and reaction
-		if (nx <= -1.0f || nx >= 1.0f) {
-			if (nx <= -1.0f)
-				particlesPos[i * 3 + 0] = currParticle.x = nx = -2.0f - nx;
-			else
-				particlesPos[i * 3 + 0] = currParticle.x = nx = 2.0f - nx;
-
-			currParticle.vx -= 2 * currParticle.vx;
-		}
-
-		if (ny <= -1.0f || ny >= 1.0f) {
-			if (ny <= -1.0f)
-				particlesPos[i * 3 + 1] = currParticle.y = ny = -2.0f - ny;
-			else
-				particlesPos[i * 3 + 1] = currParticle.y = ny = 2.0f - ny;
-
-			currParticle.vy -= 2 * currParticle.vy;
-		}
-
-		if (nz <= -1.0f || nz >= 1.0f) {
-			if (nz <= -1.0f)
-				particlesPos[i * 3 + 2] = currParticle.z = nz = -2.0f - nz;
-			else
-				particlesPos[i * 3 + 2] = currParticle.z = nz = 2.0f - nz;
-
-			currParticle.vz -= 2 * currParticle.vz;
-		}
 	}
 }
 
@@ -488,11 +361,8 @@ inline void Simulation::update()
 	if (ice)
 		return;
 
-	// update channles states
-	updateChannelsStates();
-
 	// update particles in current vector and positions buffer
-	updateParticlesPositions();
+	updateParticles();
 
 	// swap to next particles vector
 	++bufferNum %= 2;
@@ -502,52 +372,32 @@ inline void Simulation::render()
 {
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glm::mat4 viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
 
-	// render neuron
-	neuron->render();
-
-	// render channels
-	channelsRenderProgram->use();
-	channelsRenderProgram->setViewMatrix(viewMatrix);
-
-	size_t channelsOffset = 0;
-
-	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture[channel::OPEN]);
-	glBindVertexArray(NapIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsNum);
-	channelsOffset += config.NapIonsChannelsNum;
-
-	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture[channel::OPEN]);
-	glBindVertexArray(KpIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsNum);
-	channelsOffset += config.KpIonsChannelsNum;
-
-	// render ions
 	ionsRenderProgram->use();
+	glm::mat4 viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
 	ionsRenderProgram->setViewMatrix(viewMatrix);
 
-	size_t ionsOffset = 0;
+	size_t offset = 0;
 
 	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
 	glBindVertexArray(NapIonsVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.NapIonsNum);
-	ionsOffset += config.NapIonsNum;
+	glDrawArrays(GL_POINTS, offset, config.NapIonsNum);
+	offset += config.NapIonsNum;
 
 	glBindTexture(GL_TEXTURE_2D, KpIonTexture);
 	glBindVertexArray(KpIonsVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.KpIonsNum);
-	ionsOffset += config.KpIonsNum;
+	glDrawArrays(GL_POINTS, offset, config.KpIonsNum);
+	offset += config.KpIonsNum;
 
 	glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
 	glBindVertexArray(ClmIonsVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.ClmIonsNum);
-	ionsOffset += config.ClmIonsNum;
+	glDrawArrays(GL_POINTS, offset, config.ClmIonsNum);
+	offset += config.ClmIonsNum;
 
 	glBindTexture(GL_TEXTURE_2D, otherParticlesTexture);
 	glBindVertexArray(otherParticlesVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.otherParticlesNum);
-	ionsOffset += config.otherParticlesNum;
+	glDrawArrays(GL_POINTS, offset, config.otherParticlesNum);
+	offset += config.otherParticlesNum;
 
 	glFlush();
 	glfwSwapBuffers(window);
@@ -563,7 +413,6 @@ Simulation::Simulation(const Config& config)
 	setupInput();
 	setupPrograms();
 	setupStructures();
-	setupTextures();
 	setupBuffers();
 }
 
@@ -598,13 +447,7 @@ void Simulation::freeze(void)
 	ice = !ice;
 }
 
-void Simulation::reverse(void)
-{
-	rewind = !rewind;
-	timeFactor = -timeFactor;
-}
-
 double Simulation::getDeltaTime(void) const
 {
-	return inversedTimeFactor * fabs(deltaTime);
+	return inversedTimeFactor * deltaTime;
 }
