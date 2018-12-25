@@ -10,7 +10,8 @@ void Simulation::loadConfig(const Config& _config)
 	timeFactor = config.timeFactor;
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
-	particlesBufferSize = config.KpIonsNum + config.NapIonsNum + config.ClmIonsNum + config.otherParticlesNum;
+	particlesBufferSize = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
+	channelsBufferSize = config.NapIonsChannelsNum + config.KpIonsChannelsNum;
 	bufferNum = 0;
 	ice = false;
 	rewind = false;
@@ -91,7 +92,6 @@ void Simulation::setupStructures()
 {
 	setupNeuronStructures();
 	setupParticlesStructures();
-	setupChannelsStructures();
 }
 
 void Simulation::setupNeuronStructures()
@@ -148,13 +148,8 @@ void Simulation::setupParticlesStructures()
 	}
 }
 
-void Simulation::setupChannelsStructures()
-{
-}
-
 void Simulation::setupTextures()
 {
-
 	// set const values as uniforms in shader program
 	shader::Uniforms uniforms;
 	uniforms.ionRadius = config.ionRadius;
@@ -173,8 +168,6 @@ void Simulation::setupTextures()
 	ionsRenderProgram->setUniforms(uniforms);
 	glUseProgram(0);
 
-
-
 	// channels
 	channelsRenderProgram->use();
 
@@ -191,6 +184,14 @@ void Simulation::setupTextures()
 
 void Simulation::setupBuffers()
 {
+	setupParticlesBuffers();
+	setupChannelsBuffers();
+}
+
+void Simulation::setupParticlesBuffers()
+{
+	GLuint particlesPosBuf;
+
 	// create vaos
 	glCreateVertexArrays(1, &NapIonsVAO);
 	glCreateVertexArrays(1, &KpIonsVAO);
@@ -230,6 +231,57 @@ void Simulation::setupBuffers()
 		throw std::exception("Buffer mapping failed");
 
 	glUnmapNamedBuffer(particlesPosBuf);
+}
+
+void Simulation::setupChannelsBuffers()
+{
+	GLuint channelsPosBuf;
+	GLuint channelsStatesBuf;
+
+	// create vaos
+	glCreateVertexArrays(1, &NapIonsChannelsVAO);
+	glCreateVertexArrays(1, &KpIonsChannelsVAO);
+
+	// creating buffers
+	glCreateBuffers(1, &channelsPosBuf);
+	glCreateBuffers(1, &channelsStatesBuf);
+
+	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+	GLsizei posBufferSize = (GLsizei)neuron->channels.size() * 3 * sizeof(GLfloat);
+	GLsizei statesBufferSize = (GLsizei)neuron->channels.size() * sizeof(GLfloat);
+	std::vector<float> channelsPositions = neuron->getChannelsPositions();
+
+	glNamedBufferStorage(channelsPosBuf, posBufferSize, &channelsPositions[0], flags);
+	glNamedBufferStorage(channelsStatesBuf, statesBufferSize, nullptr, flags);
+
+	// positions
+	glVertexArrayVertexBuffer(NapIonsChannelsVAO, 0, channelsPosBuf, 0, 3 * sizeof(GLfloat));
+	glVertexArrayAttribFormat(NapIonsChannelsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(NapIonsChannelsVAO, 0, 0);
+	glEnableVertexArrayAttrib(NapIonsChannelsVAO, 0);
+
+	glVertexArrayVertexBuffer(KpIonsChannelsVAO, 0, channelsPosBuf, 0, 3 * sizeof(GLfloat));
+	glVertexArrayAttribFormat(KpIonsChannelsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(KpIonsChannelsVAO, 0, 0);
+	glEnableVertexArrayAttrib(KpIonsChannelsVAO, 0);
+
+	// states
+	glVertexArrayVertexBuffer(NapIonsChannelsVAO, 1, channelsStatesBuf, 0, sizeof(GLfloat));
+	glVertexArrayAttribFormat(NapIonsChannelsVAO, 1, 1, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(NapIonsChannelsVAO, 1, 0);
+	glEnableVertexArrayAttrib(NapIonsChannelsVAO, 1);
+
+	glVertexArrayVertexBuffer(KpIonsChannelsVAO, 1, channelsStatesBuf, 0, sizeof(GLfloat));
+	glVertexArrayAttribFormat(KpIonsChannelsVAO, 1, 1, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(KpIonsChannelsVAO, 1, 0);
+	glEnableVertexArrayAttrib(KpIonsChannelsVAO, 1);
+
+	// initialize buffers in GPU and get pointers to them
+	channelsStates = (float*)glMapNamedBuffer(channelsStatesBuf, GL_WRITE_ONLY);
+	if (!channelsStates)
+		throw std::exception("Buffer mapping failed");
+
+	glUnmapNamedBuffer(channelsStatesBuf);
 }
 
 void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -360,18 +412,61 @@ bool Simulation::updateFramebufferSize(int width, int height)
 
 inline void Simulation::updateChannelsStates()
 {
+	// parallelization can be done due to no influence from other channels
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = 0; i < channelsBufferSize; ++i) {
+		Channel& currChannel = neuron->channels[i];
 
+		Particle* particle;
+		float dx, dy, dz, dSq;
+		float Ein = 0.0f;
+		float Eout = 0.0f;
+
+		// calc electric field inside neuron
+		for (long j = 0; j < particlesBufferSize; ++j) {
+			particle = &particles[bufferNum][j];
+
+			dx = particle->x - currChannel.xIn;
+			dy = particle->y - currChannel.yIn;
+			dz = particle->z - currChannel.zIn;
+
+			// distance between particle and channel squared (d - distance, Sq - squared)
+			dSq = dx * dx + dy * dy + dz * dz;
+			if (dSq == 0.0)
+				continue;
+
+			Ein += phy::k * particle->charge / (metricFactorSq * dSq);
+		}
+
+		// calc electric field outside neuron
+		for (long j = 0; j < particlesBufferSize; ++j) {
+			particle = &particles[bufferNum][j];
+
+			dx = particle->x - currChannel.xOut;
+			dy = particle->y - currChannel.yOut;
+			dz = particle->z - currChannel.zOut;
+
+			// distance between particle and channel squared (d - distance, Sq - squared)
+			dSq = dx * dx + dy * dy + dz * dz;
+			if (dSq == 0.0)
+				continue;
+
+			Eout += phy::k * particle->charge / (metricFactorSq * dSq);
+		}
+		float U = Ein - Eout;
+		channelsStates[i] = currChannel.U = Ein - Eout;
+	}
 }
 
 inline void Simulation::updateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long ionsBufferSize = (long)particlesBufferSize;
 	
 	// parallelization can be done due to double buffering particles vector
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
-	for (long i = 0; i < ionsBufferSize; ++i) {
+	for (long i = 0; i < particlesBufferSize; ++i) {
 		Particle& currParticle = particles[bufferNum][i];
 		Particle& prevParticle = particles[nextBufferNum][i];
 
@@ -406,7 +501,7 @@ inline void Simulation::updateParticlesPositions()
 		}
 
 		// calculate forces from particles current + 1 to last
-		for (long j = i + 1; j < ionsBufferSize; ++j) {
+		for (long j = i + 1; j < particlesBufferSize; ++j) {
 			particle = &particles[nextBufferNum][j];
 
 			dx = particle->x - currParticle.x;
@@ -513,12 +608,12 @@ inline void Simulation::render()
 
 	size_t channelsOffset = 0;
 
-	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture[channel::OPEN]);
+	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture[channel::NONE]);
 	glBindVertexArray(NapIonsChannelsVAO);
 	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsNum);
 	channelsOffset += config.NapIonsChannelsNum;
 
-	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture[channel::OPEN]);
+	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture[channel::NONE]);
 	glBindVertexArray(KpIonsChannelsVAO);
 	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsNum);
 	channelsOffset += config.KpIonsChannelsNum;
@@ -569,7 +664,8 @@ Simulation::Simulation(const Config& config)
 
 Simulation::~Simulation()
 {
-	glfwDestroyWindow(window);
+	glfwTerminate();
+	delete neuron;
 	logfile.close();
 }
 

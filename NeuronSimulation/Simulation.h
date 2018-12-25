@@ -54,8 +54,7 @@ class Simulation
 	// particles structs
 	std::vector<Particle> particles[2];
 	std::vector<double> partAccOrigin;
-	size_t particlesBufferSize;
-	GLuint particlesPosBuf;
+	long particlesBufferSize;
 	float* particlesPos;
 
 /* -----------------CHANNELS----------------- */
@@ -72,10 +71,8 @@ class Simulation
 	GLuint KpIonChannelTexture[channel::STATES_COUNT];
 
 	// channels structs
-	std::vector<Channel> channels;
-	size_t channelsBufferSize;
-	GLuint channelsPosBuf;
-	float* channelsPos;
+	long channelsBufferSize;
+	float* channelsStates;
 
 /* -----------------NEURON----------------- */
 
@@ -91,9 +88,10 @@ class Simulation
 	void setupStructures();
 	void setupNeuronStructures();
 	void setupParticlesStructures();
-	void setupChannelsStructures();
 	void setupTextures();
 	void setupBuffers();
+	void setupParticlesBuffers();
+	void setupChannelsBuffers();
 
 	static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
 	static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);

@@ -14,6 +14,7 @@
 #include "STBImage.h"
 #include "ShaderProgram.h"
 #include "Particle.h"
+#include "Channel.h"
 
 namespace phy {
 	/* physics consts:										*/
@@ -23,9 +24,13 @@ namespace phy {
 	/* K+ radius:					152 * 10^(-12) m		*/
 	/* Na+ channel width:			0.45 nm					*/
 	/* K+ channel width:			1.5 nm					*/
+	/* Lipid bilayer width:			6.0 nm					*/
+
 	constexpr double e = 1.60218e-19;
 	constexpr double k = 1.2839342030e+8;
 	constexpr double u1 = 1.6605389274e-27;
+
+	constexpr double lipidBilayerWidth = 6e-9;
 
 	constexpr double NapR = 116e-12;
 	constexpr double NapM = 38.1754326758e-27;

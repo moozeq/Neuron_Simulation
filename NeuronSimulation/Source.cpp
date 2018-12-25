@@ -20,12 +20,12 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 2000;
+	config.NapIonsNum = 200;
 	config.KpIonsNum = 0;
 	config.ClmIonsNum = 0;
 	config.otherParticlesNum = 0;
 
-	config.NapIonsChannelsNum = 0;
+	config.NapIonsChannelsNum = 1;
 	config.KpIonsChannelsNum = 0;
 
 	config.ionRadius = 0.0078125;
