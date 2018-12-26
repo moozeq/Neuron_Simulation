@@ -18,8 +18,11 @@ class Channel
 	friend class Simulation;
 	friend class Neuron;
 
+	channel::Type type;
 	channel::Gating gating;
+	channel::State state;
 
+	float timeLeft;
 	float U;
 	float radius;
 	float width;

@@ -1,11 +1,10 @@
 #version 450 core
 
-layout (location = 0) in vec3 channelPosition;
-layout (location = 1) in float channelState;
+layout (location = 0) in vec4 channel;
 
-//out float vertChannelState;
+out float vertChannelState;
 
 void main(void) {
-	gl_Position = vec4(channelPosition.xyz, 1.0f);
-	//vertChannelState = channelState;
+	gl_Position = vec4(channel.xyz, 1.0f);
+	vertChannelState = channel[3];
 }

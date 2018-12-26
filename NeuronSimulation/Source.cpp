@@ -11,8 +11,8 @@ extern "C" {
 int main(void)
 {
 	Config config;
-	config.metricFactorSq = 1e-9;
-	config.timeFactor = 1e-9;
+	config.metricFactor = 1e-9;
+	config.timeFactor = 1e-11;
 
 	config.buffersNum = 2;
 
@@ -20,7 +20,7 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 200;
+	config.NapIonsNum = 100;
 	config.KpIonsNum = 0;
 	config.ClmIonsNum = 0;
 	config.otherParticlesNum = 0;

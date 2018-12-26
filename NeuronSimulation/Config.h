@@ -4,7 +4,7 @@
 
 struct Config
 {
-	double metricFactorSq;
+	double metricFactor;
 	double timeFactor;
 
 	size_t buffersNum;

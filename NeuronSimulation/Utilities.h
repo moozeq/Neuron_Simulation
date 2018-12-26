@@ -25,12 +25,18 @@ namespace phy {
 	/* Na+ channel width:			0.45 nm					*/
 	/* K+ channel width:			1.5 nm					*/
 	/* Lipid bilayer width:			6.0 nm					*/
+	/* Na+ channel open treshold:   -40 mV					*/
+	/* Na+ channel open time:       1 ms					*/
+	/* Na+ channel inactive time:   1 ms					*/
 
 	constexpr double e = 1.60218e-19;
 	constexpr double k = 1.2839342030e+8;
 	constexpr double u1 = 1.6605389274e-27;
 
 	constexpr double lipidBilayerWidth = 6e-9;
+	constexpr double NapOpenTreshold = -40e-3;
+	constexpr double NapOpenTime = 1e-3;
+	constexpr double NapInactiveTime = 1e-3;
 
 	constexpr double NapR = 116e-12;
 	constexpr double NapM = 38.1754326758e-27;

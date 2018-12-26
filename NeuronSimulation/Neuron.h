@@ -20,6 +20,6 @@ public:
 	Neuron();
 	~Neuron();
 	void render();
-	std::vector<float> getChannelsPositions();
+	std::vector<float> getChannels();
 };
 

@@ -6,7 +6,8 @@ void Simulation::loadConfig(const Config& _config)
 	config = _config;
 
 	// set variables based on config struct
-	metricFactorSq = config.metricFactorSq * config.metricFactorSq;
+	metricFactorSq = config.metricFactor * config.metricFactor;
+	metricFactor = config.metricFactor;
 	timeFactor = config.timeFactor;
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
@@ -235,53 +236,38 @@ void Simulation::setupParticlesBuffers()
 
 void Simulation::setupChannelsBuffers()
 {
-	GLuint channelsPosBuf;
-	GLuint channelsStatesBuf;
+	GLuint channelsBuf;
 
 	// create vaos
 	glCreateVertexArrays(1, &NapIonsChannelsVAO);
 	glCreateVertexArrays(1, &KpIonsChannelsVAO);
 
 	// creating buffers
-	glCreateBuffers(1, &channelsPosBuf);
-	glCreateBuffers(1, &channelsStatesBuf);
+	glCreateBuffers(1, &channelsBuf);
 
 	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-	GLsizei posBufferSize = (GLsizei)neuron->channels.size() * 3 * sizeof(GLfloat);
-	GLsizei statesBufferSize = (GLsizei)neuron->channels.size() * sizeof(GLfloat);
-	std::vector<float> channelsPositions = neuron->getChannelsPositions();
+	GLsizei channelBufferSize = (GLsizei)neuron->channels.size() * 4 * sizeof(GLfloat);
+	std::vector<float> channels = neuron->getChannels();
 
-	glNamedBufferStorage(channelsPosBuf, posBufferSize, &channelsPositions[0], flags);
-	glNamedBufferStorage(channelsStatesBuf, statesBufferSize, nullptr, flags);
+	glNamedBufferStorage(channelsBuf, channelBufferSize, &channels[0], flags);
 
 	// positions
-	glVertexArrayVertexBuffer(NapIonsChannelsVAO, 0, channelsPosBuf, 0, 3 * sizeof(GLfloat));
-	glVertexArrayAttribFormat(NapIonsChannelsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayVertexBuffer(NapIonsChannelsVAO, 0, channelsBuf, 0, 4 * sizeof(GLfloat));
+	glVertexArrayAttribFormat(NapIonsChannelsVAO, 0, 4, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(NapIonsChannelsVAO, 0, 0);
 	glEnableVertexArrayAttrib(NapIonsChannelsVAO, 0);
 
-	glVertexArrayVertexBuffer(KpIonsChannelsVAO, 0, channelsPosBuf, 0, 3 * sizeof(GLfloat));
-	glVertexArrayAttribFormat(KpIonsChannelsVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayVertexBuffer(KpIonsChannelsVAO, 0, channelsBuf, 0, 4 * sizeof(GLfloat));
+	glVertexArrayAttribFormat(KpIonsChannelsVAO, 0, 4, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(KpIonsChannelsVAO, 0, 0);
 	glEnableVertexArrayAttrib(KpIonsChannelsVAO, 0);
 
-	// states
-	glVertexArrayVertexBuffer(NapIonsChannelsVAO, 1, channelsStatesBuf, 0, sizeof(GLfloat));
-	glVertexArrayAttribFormat(NapIonsChannelsVAO, 1, 1, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribBinding(NapIonsChannelsVAO, 1, 0);
-	glEnableVertexArrayAttrib(NapIonsChannelsVAO, 1);
-
-	glVertexArrayVertexBuffer(KpIonsChannelsVAO, 1, channelsStatesBuf, 0, sizeof(GLfloat));
-	glVertexArrayAttribFormat(KpIonsChannelsVAO, 1, 1, GL_FLOAT, GL_FALSE, 0);
-	glVertexArrayAttribBinding(KpIonsChannelsVAO, 1, 0);
-	glEnableVertexArrayAttrib(KpIonsChannelsVAO, 1);
-
 	// initialize buffers in GPU and get pointers to them
-	channelsStates = (float*)glMapNamedBuffer(channelsStatesBuf, GL_WRITE_ONLY);
-	if (!channelsStates)
+	channelsAttribs = (float*)glMapNamedBuffer(channelsBuf, GL_WRITE_ONLY);
+	if (!channelsAttribs)
 		throw std::exception("Buffer mapping failed");
 
-	glUnmapNamedBuffer(channelsStatesBuf);
+	glUnmapNamedBuffer(channelsBuf);
 }
 
 void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -310,7 +296,7 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		log(simulation->logfile, "[+] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
 	}
 
-	// DOWN - amera speed - 20%
+	// DOWN - camera speed - 20%
 	if (key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->camera.movementSpeed *= 0.8f;
 		log(simulation->logfile, "[-] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
@@ -412,16 +398,19 @@ bool Simulation::updateFramebufferSize(int width, int height)
 
 inline void Simulation::updateChannelsStates()
 {
+	const long channelsBufferSizeInLoop = channelsBufferSize;
+
 	// parallelization can be done due to no influence from other channels
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
-	for (long i = 0; i < channelsBufferSize; ++i) {
+	for (long i = 0; i < channelsBufferSizeInLoop; ++i) {
 		Channel& currChannel = neuron->channels[i];
 
 		Particle* particle;
-		float dx, dy, dz, dSq;
+		float dx, dy, dz, d;
 		float Ein = 0.0f;
 		float Eout = 0.0f;
+		float U = 0.0f;
 
 		// calc electric field inside neuron
 		for (long j = 0; j < particlesBufferSize; ++j) {
@@ -431,12 +420,11 @@ inline void Simulation::updateChannelsStates()
 			dy = particle->y - currChannel.yIn;
 			dz = particle->z - currChannel.zIn;
 
-			// distance between particle and channel squared (d - distance, Sq - squared)
-			dSq = dx * dx + dy * dy + dz * dz;
-			if (dSq == 0.0)
+			d = sqrt(dx * dx + dy * dy + dz * dz);
+			if (d == 0.0)
 				continue;
 
-			Ein += phy::k * particle->charge / (metricFactorSq * dSq);
+			Ein += phy::k * particle->charge / (metricFactor * d);
 		}
 
 		// calc electric field outside neuron
@@ -447,26 +435,75 @@ inline void Simulation::updateChannelsStates()
 			dy = particle->y - currChannel.yOut;
 			dz = particle->z - currChannel.zOut;
 
-			// distance between particle and channel squared (d - distance, Sq - squared)
-			dSq = dx * dx + dy * dy + dz * dz;
-			if (dSq == 0.0)
+			d = sqrt(dx * dx + dy * dy + dz * dz);
+			if (d == 0.0)
 				continue;
 
-			Eout += phy::k * particle->charge / (metricFactorSq * dSq);
+			Eout += phy::k * particle->charge / (metricFactor * d);
 		}
-		float U = Ein - Eout;
-		channelsStates[i] = currChannel.U = Ein - Eout;
+		currChannel.U = U = Ein - Eout;
+
+		// TODO probability to open instead of threshold
+		// TODO add relative refraction 
+		// TODO refactor, delete logs
+
+		std::ostringstream streamObj;
+		switch (currChannel.state) {
+		case channel::CLOSED:
+			if (U > phy::NapOpenTreshold) {
+
+				log(logfile, "[C] Channel opened, U = " + std::to_string(U));
+
+				currChannel.state = channel::OPEN;
+				currChannel.timeLeft = config.timeFactor / phy::NapOpenTime;
+				channelsAttribs[i * 4 + 3] = 1.0f;
+			}
+			break;
+		case channel::OPEN:
+			
+			currChannel.timeLeft -= deltaTime;
+
+			log(logfile, "[O] Channel open, U = " + std::to_string(U));
+			streamObj << currChannel.timeLeft;
+			log(logfile, "[O] Channel open, time left = " + streamObj.str());
+
+			if (currChannel.timeLeft < 0.0f) {
+
+				log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
+
+				currChannel.state = channel::INACTIVE;
+				currChannel.timeLeft = config.timeFactor / phy::NapInactiveTime;
+				channelsAttribs[i * 4 + 3] = 0.5f;
+			}
+			break;
+		case channel::INACTIVE:
+			currChannel.timeLeft -= deltaTime;
+
+			log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
+			streamObj << currChannel.timeLeft;
+			log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
+
+			if (currChannel.timeLeft < 0.0f) {
+
+				log(logfile, "[C] Channel closed, U = " + std::to_string(U));
+
+				currChannel.state = channel::CLOSED;
+				channelsAttribs[i * 4 + 3] = 0.0f;
+			}
+			break;
+		}
 	}
 }
 
 inline void Simulation::updateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
+	const long particlesBufferSizeInLoop = particlesBufferSize;
 	
 	// parallelization can be done due to double buffering particles vector
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
-	for (long i = 0; i < particlesBufferSize; ++i) {
+	for (long i = 0; i < particlesBufferSizeInLoop; ++i) {
 		Particle& currParticle = particles[bufferNum][i];
 		Particle& prevParticle = particles[nextBufferNum][i];
 

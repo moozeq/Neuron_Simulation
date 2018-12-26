@@ -18,7 +18,9 @@ class Simulation
 	Config config;
 	std::ofstream logfile;
 	double metricFactorSq;
+	double metricFactor;
 	double inversedTimeFactor;
+	double timeFactor;
 	unsigned short bufferNum;
 	int width;
 	int height;
@@ -26,7 +28,6 @@ class Simulation
 	// runtime config variables
 	bool ice;
 	bool rewind;
-	double timeFactor;
 	double currentFrame;
 	double lastFrame;
 	double deltaTime;
@@ -72,7 +73,7 @@ class Simulation
 
 	// channels structs
 	long channelsBufferSize;
-	float* channelsStates;
+	float* channelsAttribs;
 
 /* -----------------NEURON----------------- */
 
