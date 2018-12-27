@@ -18,6 +18,7 @@
 
 namespace phy {
 	/* physics consts:										*/
+	/* angstream a:					10^(-10)				*/
 	/* epsilonR, water in 36.6:		~70.0					*/
 	/* epsilon0:					8.8542 * 10^(-12) F/m	*/
 	/* Na+ radius:					116 * 10^(-12) m		*/
@@ -29,29 +30,38 @@ namespace phy {
 	/* Na+ channel open time:       1 ms					*/
 	/* Na+ channel inactive time:   1 ms					*/
 
+	constexpr double A = 1e-10;
 	constexpr double e = 1.60218e-19;
 	constexpr double k = 1.2839342030e+8;
 	constexpr double u1 = 1.6605389274e-27;
 
-	constexpr double lipidBilayerWidth = 6e-9;
+	constexpr double lipidBilayerWidth = 60 * A;
 	constexpr double NapOpenTreshold = -40e-3;
 	constexpr double NapOpenTime = 1e-3;
 	constexpr double NapInactiveTime = 1e-3;
 
-	constexpr double NapR = 116e-12;
+	constexpr double NapR = 1.16 * A;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
 	constexpr double NapA = k * NapC / NapM;
 
-	constexpr double KpR = 152e-12;
+	constexpr double KpR = 1.52 * A;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 	constexpr double KpA = k * KpC / KpM;
 
-	constexpr double ClmR = 167e-12;
+	constexpr double ClmR = 1.67 * A;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;
+
+	constexpr double MIR = 10 * A;
+	constexpr double MIM = 1e-24;
+	constexpr double MIC = -1000.0 * e;
+	constexpr double MIA = k * MIC / MIM;
+
+	constexpr double NapChR = 20 * A;
+	constexpr double KpChR = 34 * A;
 }
 
 static inline double getRandDouble(double min, double max) {
@@ -84,8 +94,8 @@ static Particle* newParticle(double boundaries, particle::Type type) {
 		break;
 
 	case particle::MASSIVEION:
-		particle->charge = 1e5 * phy::ClmC;
-		particle->mass = 1e10 * phy::ClmM;
+		particle->charge = phy::MIC;
+		particle->mass = phy::MIM;
 		break;
 
 	default:

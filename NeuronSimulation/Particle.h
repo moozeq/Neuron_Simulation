@@ -17,7 +17,7 @@ To add new particle:
 
 namespace particle {
 	enum Type {
-		NAP, KP, CLM, MASSIVEION
+		NAP, KP, CLM, MASSIVEION, TYPES_COUNT
 	};
 }
 

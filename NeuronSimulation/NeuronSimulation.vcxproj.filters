@@ -19,6 +19,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{99acc3ef-3d0c-4bc1-b9be-c9b08b01f722}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Neuron">
+      <UniqueIdentifier>{c67f628f-fa30-40c9-bdd7-31d7d34ad1c4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -27,46 +30,46 @@
     <ClCompile Include="Simulation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Neuron.cpp">
+      <Filter>Neuron</Filter>
+    </ClCompile>
     <ClCompile Include="Channel.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Neuron</Filter>
     </ClCompile>
     <ClCompile Include="Barrier.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Neuron.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Neuron</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Simulation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Utilities.h">
       <Filter>Utilities</Filter>
     </ClInclude>
     <ClInclude Include="STBImage.h">
       <Filter>Utilities</Filter>
     </ClInclude>
-    <ClInclude Include="Camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ShaderProgram.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Particle.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Channel.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Neuron.h">
+      <Filter>Neuron</Filter>
     </ClInclude>
     <ClInclude Include="Barrier.h">
-      <Filter>Header Files</Filter>
+      <Filter>Neuron</Filter>
     </ClInclude>
-    <ClInclude Include="Neuron.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="Channel.h">
+      <Filter>Neuron</Filter>
+    </ClInclude>
+    <ClInclude Include="Config.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Particle.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShaderProgram.h">
+      <Filter>Utilities</Filter>
+    </ClInclude>
+    <ClInclude Include="Simulation.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

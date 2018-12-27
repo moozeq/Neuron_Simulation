@@ -3,7 +3,7 @@
 
 namespace channel {
 	enum Type {
-		NAP, KP, CLM
+		NAP, KP, TYPES_COUNT
 	};
 	enum Gating {
 		VOLTAGE_GATED, LIGAND_GATED

@@ -1,5 +1,9 @@
 #include "Neuron.h"
 
+void Neuron::addBarrier(float x, float y, float z, float radius, float width, float NapChannelsDensity, float KpChannelsDensity)
+{
+}
+
 void Neuron::setupPrograms() {
 	std::vector<const GLchar*> barriersPaths({
 			   "Barriers.vert",
@@ -13,11 +17,16 @@ void Neuron::setupStructures()
 
 }
 
-Neuron::Neuron()
+Neuron::Neuron(double _metricFactor, double _timeFactor) :
+	metricFactor(_metricFactor), timeFactor(_timeFactor)
 {
+	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
 	setupPrograms();
-	float start[3] = { -1.0f, 0.0f, 0.0f };
-	float stop[3] = { -1.1f, 0.0f, 0.0f };
+
+	addBarrier(0, 0, 0, 0.5f, 0.5f, 10.0f, 0.0f);
+
+	float start[3] = { 0.0f, 0.0f, 0.0f };
+	float stop[3] = { 0.0f - lipidBilayerWidth, 0.0f, 0.0f };
 	float start2[3] = { -0.5f, 0.0f, 0.0f };
 	float stop2[3] = { -0.6f, 0.0f, 0.0f };
 	float start3[3] = { -0.1f, 0.0f, 0.0f };

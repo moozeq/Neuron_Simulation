@@ -13,11 +13,17 @@ class Neuron
 
 	GLuint channelsPosBuf;
 
+	double lipidBilayerWidth;
+	double metricFactor;
+	double timeFactor;
+
+	void addBarrier(float x, float y, float z, float radius, float width, float NapChannelsDensity, float KpChannelsDensity);
+
 	void setupPrograms();
 	void setupStructures();
 
 public:
-	Neuron();
+	Neuron(double _metricFactor, double _timeFactor);
 	~Neuron();
 	void render();
 	std::vector<float> getChannels();

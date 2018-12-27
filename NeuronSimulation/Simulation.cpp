@@ -97,7 +97,7 @@ void Simulation::setupStructures()
 
 void Simulation::setupNeuronStructures()
 {
-	neuron = new Neuron();
+	neuron = new Neuron(metricFactor, timeFactor);
 }
 
 void Simulation::setupParticlesStructures()
@@ -149,38 +149,35 @@ void Simulation::setupParticlesStructures()
 	}
 }
 
+void Simulation::setupUniforms()
+{
+	particleRadius[particle::NAP] = phy::NapR / metricFactor;
+	particleRadius[particle::KP] = phy::KpR / metricFactor;
+	particleRadius[particle::CLM] = phy::ClmR / metricFactor;
+	particleRadius[particle::MASSIVEION] = phy::MIR / metricFactor;
+
+	channelRadius[channel::NAP] = phy::NapChR / metricFactor;
+	channelRadius[channel::KP] = phy::KpChR / metricFactor;
+
+	// set const values as uniforms in shader program
+	uniforms.channelWidth = phy::lipidBilayerWidth / metricFactor;
+
+	channelsRenderProgram->use();
+	channelsRenderProgram->setUniforms(uniforms);
+	glUseProgram(0);
+}
+
 void Simulation::setupTextures()
 {
-	// set const values as uniforms in shader program
-	shader::Uniforms uniforms;
-	uniforms.ionRadius = config.ionRadius;
-	uniforms.channelRadius = config.channelRadius;
-
-	// ions
-	ionsRenderProgram->use();
-
-	// load textures
+	// load particles textures
 	NapIonTexture = loadMipmapTexture(GL_TEXTURE0, config.NapIonTexturePath.c_str());
 	KpIonTexture = loadMipmapTexture(GL_TEXTURE0, config.KpIonTexturePath.c_str());
 	ClmIonTexture = loadMipmapTexture(GL_TEXTURE0, config.ClmIonTexturePath.c_str());
 	otherParticlesTexture = loadMipmapTexture(GL_TEXTURE0, config.otherParticlesTexturePath.c_str());
 
-	// set uniforms
-	ionsRenderProgram->setUniforms(uniforms);
-	glUseProgram(0);
-
-	// channels
-	channelsRenderProgram->use();
-
-	// load textures
-	for (int i = 0; i < channel::STATES_COUNT; ++i)
-		NapIonChannelTexture[i] = loadMipmapTexture(GL_TEXTURE0, config.NapChannelTexturePath[i].c_str());
-	for (int i = 0; i < channel::STATES_COUNT; ++i)
-		KpIonChannelTexture[i] = loadMipmapTexture(GL_TEXTURE0, config.KpChannelTexturePath[i].c_str());
-	
-	// set uniforms
-	channelsRenderProgram->setUniforms(uniforms);
-	glUseProgram(0);
+	// load channels textures
+	NapIonChannelTexture = loadMipmapTexture(GL_TEXTURE0, config.NapChannelTexturePath.c_str());
+	KpIonChannelTexture = loadMipmapTexture(GL_TEXTURE0, config.KpChannelTexturePath.c_str());
 }
 
 void Simulation::setupBuffers()
@@ -455,7 +452,7 @@ inline void Simulation::updateChannelsStates()
 				log(logfile, "[C] Channel opened, U = " + std::to_string(U));
 
 				currChannel.state = channel::OPEN;
-				currChannel.timeLeft = config.timeFactor / phy::NapOpenTime;
+				currChannel.timeLeft = phy::NapOpenTime;
 				channelsAttribs[i * 4 + 3] = 1.0f;
 			}
 			break;
@@ -472,7 +469,7 @@ inline void Simulation::updateChannelsStates()
 				log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
 
 				currChannel.state = channel::INACTIVE;
-				currChannel.timeLeft = config.timeFactor / phy::NapInactiveTime;
+				currChannel.timeLeft = phy::NapInactiveTime;
 				channelsAttribs[i * 4 + 3] = 0.5f;
 			}
 			break;
@@ -482,7 +479,7 @@ inline void Simulation::updateChannelsStates()
 			log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
 			streamObj << currChannel.timeLeft;
 			log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
-
+				
 			if (currChannel.timeLeft < 0.0f) {
 
 				log(logfile, "[C] Channel closed, U = " + std::to_string(U));
@@ -640,42 +637,54 @@ inline void Simulation::render()
 	neuron->render();
 
 	// render channels
+	size_t channelsOffset = 0;
+
 	channelsRenderProgram->use();
 	channelsRenderProgram->setViewMatrix(viewMatrix);
 
-	size_t channelsOffset = 0;
-
-	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture[channel::NONE]);
+	uniforms.channelRadius = channelRadius[channel::NAP];
+	channelsRenderProgram->setUniforms(uniforms);
+	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture);
 	glBindVertexArray(NapIonsChannelsVAO);
 	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsNum);
 	channelsOffset += config.NapIonsChannelsNum;
 
-	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture[channel::NONE]);
+	uniforms.channelRadius = channelRadius[channel::KP];
+	channelsRenderProgram->setUniforms(uniforms);
+	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture);
 	glBindVertexArray(KpIonsChannelsVAO);
 	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsNum);
 	channelsOffset += config.KpIonsChannelsNum;
 
 	// render ions
+	size_t ionsOffset = 0;
+
 	ionsRenderProgram->use();
 	ionsRenderProgram->setViewMatrix(viewMatrix);
 
-	size_t ionsOffset = 0;
-
+	uniforms.ionRadius = particleRadius[particle::NAP];
+	ionsRenderProgram->setUniforms(uniforms);
 	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
 	glBindVertexArray(NapIonsVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.NapIonsNum);
 	ionsOffset += config.NapIonsNum;
 
+	uniforms.ionRadius = particleRadius[particle::KP];
+	ionsRenderProgram->setUniforms(uniforms);
 	glBindTexture(GL_TEXTURE_2D, KpIonTexture);
 	glBindVertexArray(KpIonsVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.KpIonsNum);
 	ionsOffset += config.KpIonsNum;
 
+	uniforms.ionRadius = particleRadius[particle::CLM];
+	ionsRenderProgram->setUniforms(uniforms);
 	glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
 	glBindVertexArray(ClmIonsVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.ClmIonsNum);
 	ionsOffset += config.ClmIonsNum;
 
+	uniforms.ionRadius = particleRadius[particle::MASSIVEION];
+	ionsRenderProgram->setUniforms(uniforms);
 	glBindTexture(GL_TEXTURE_2D, otherParticlesTexture);
 	glBindVertexArray(otherParticlesVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.otherParticlesNum);
@@ -695,6 +704,7 @@ Simulation::Simulation(const Config& config)
 	setupInput();
 	setupPrograms();
 	setupStructures();
+	setupUniforms();
 	setupTextures();
 	setupBuffers();
 }

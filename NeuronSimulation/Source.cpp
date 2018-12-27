@@ -11,8 +11,10 @@ extern "C" {
 int main(void)
 {
 	Config config;
-	config.metricFactor = 1e-9;
-	config.timeFactor = 1e-11;
+	// distance 1.0 in simulation is 1.0 um in real world
+	config.metricFactor = 1e-6;
+	// time 1.0 in simulation is 1.0 ps in real world
+	config.timeFactor = 1e-12;
 
 	config.buffersNum = 2;
 
@@ -21,26 +23,20 @@ int main(void)
 	config.logPath = "simulation.log";
 
 	config.NapIonsNum = 100;
-	config.KpIonsNum = 0;
-	config.ClmIonsNum = 0;
+	config.KpIonsNum = 100;
+	config.ClmIonsNum = 200;
 	config.otherParticlesNum = 0;
 
 	config.NapIonsChannelsNum = 1;
 	config.KpIonsChannelsNum = 0;
 
-	config.ionRadius = 0.0078125;
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";
 	config.ClmIonTexturePath = "ClmIon.png";
 	config.otherParticlesTexturePath = "otherParticles.png";
 
-	config.channelRadius = 0.015625;
-	config.NapChannelTexturePath[channel::OPEN] = "NapChannelOpen.png";
-	config.NapChannelTexturePath[channel::CLOSED] = "NapChannelClosed.png";
-	config.NapChannelTexturePath[channel::INACTIVE] = "NapChannelInactive.png";
-	config.KpChannelTexturePath[channel::OPEN] = "KpChannelOpen.png";
-	config.KpChannelTexturePath[channel::CLOSED] = "KpChannelClosed.png";
-	config.KpChannelTexturePath[channel::INACTIVE] = "KpChannelInactive.png";
+	config.NapChannelTexturePath = "NapChannel.png";
+	config.KpChannelTexturePath = "KpChannel.png";
 
 	try {
 		Simulation simulation(config);

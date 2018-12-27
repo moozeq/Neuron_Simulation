@@ -24,8 +24,9 @@ to add new uniform, change:
 	struct Uniforms {
 		GLfloat ionRadius;
 		GLfloat channelRadius;
+		GLfloat channelWidth;
 		GLint NapIonTexture;
-		GLint NApChannelTexture;
+		GLint NapChannelTexture;
 		GLint KpIonTexture;
 		GLint KpChannelTexture;
 	};
@@ -38,6 +39,7 @@ class ShaderProgram
 	// uniforms
 	GLuint ionRadiusLoc;
 	GLuint channelRadiusLoc;
+	GLuint channelWidthLoc;
 
 	GLuint NapIonTextureLoc;
 	GLuint NApChannelTextureLoc;
@@ -129,10 +131,7 @@ public:
 		// uniforms here
 		ionRadiusLoc = glGetUniformLocation(id, "ionRadius");
 		channelRadiusLoc = glGetUniformLocation(id, "channelRadius");
-		NapIonTextureLoc = glGetUniformLocation(id, "NapIonTexture");
-		NApChannelTextureLoc = glGetUniformLocation(id, "NApChannelTexture");
-		KpIonTextureLoc = glGetUniformLocation(id, "KpIonTexture");
-		KpChannelTextureLoc = glGetUniformLocation(id, "KpChannelTexture");
+		channelWidthLoc = glGetUniformLocation(id, "channelWidth");
 
 		// view uniform here
 		viewMatrixLoc = glGetUniformLocation(id, "viewMatrix");
@@ -145,10 +144,7 @@ public:
 	void setUniforms(shader::Uniforms& uniforms) {
 		glUniform1f(ionRadiusLoc, uniforms.ionRadius);
 		glUniform1f(channelRadiusLoc, uniforms.channelRadius);
-		glUniform1i(NapIonTextureLoc, uniforms.NapIonTexture);
-		glUniform1i(NApChannelTextureLoc, uniforms.NApChannelTexture);
-		glUniform1i(KpIonTextureLoc, uniforms.KpIonTexture);
-		glUniform1i(KpChannelTextureLoc, uniforms.KpChannelTexture);
+		glUniform1f(channelWidthLoc, uniforms.channelWidth);
 	}
 
 	void setViewMatrix(glm::mat4 viewMatrix) {

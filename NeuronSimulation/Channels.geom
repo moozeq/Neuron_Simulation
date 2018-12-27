@@ -4,6 +4,7 @@ layout (points) in;
 layout (triangle_strip, max_vertices = 24) out;
 
 uniform float channelRadius;
+uniform float channelWidth;
 uniform mat4 viewMatrix;
 
 in float[1] vertChannelState;

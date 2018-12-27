@@ -26,6 +26,7 @@ class Simulation
 	int height;
 
 	// runtime config variables
+	shader::Uniforms uniforms;
 	bool ice;
 	bool rewind;
 	double currentFrame;
@@ -55,6 +56,7 @@ class Simulation
 	// particles structs
 	std::vector<Particle> particles[2];
 	std::vector<double> partAccOrigin;
+	float particleRadius[particle::TYPES_COUNT];
 	long particlesBufferSize;
 	float* particlesPos;
 
@@ -68,10 +70,11 @@ class Simulation
 	GLuint KpIonsChannelsVAO;
 
 	// channels textures
-	GLuint NapIonChannelTexture[channel::STATES_COUNT];
-	GLuint KpIonChannelTexture[channel::STATES_COUNT];
+	GLuint NapIonChannelTexture;
+	GLuint KpIonChannelTexture;
 
 	// channels structs
+	float channelRadius[channel::TYPES_COUNT];
 	long channelsBufferSize;
 	float* channelsAttribs;
 
@@ -89,6 +92,7 @@ class Simulation
 	void setupStructures();
 	void setupNeuronStructures();
 	void setupParticlesStructures();
+	void setupUniforms();
 	void setupTextures();
 	void setupBuffers();
 	void setupParticlesBuffers();
