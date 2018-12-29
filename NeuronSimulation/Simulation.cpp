@@ -48,9 +48,10 @@ void Simulation::setupOpenGL()
 		throw std::exception("GLEW initialization's failed");
 
 	// enable alpha channel in textures
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
 
 	glViewport(0, 0, width, height);
 
@@ -161,6 +162,7 @@ void Simulation::setupUniforms()
 
 	// set const values as uniforms in shader program
 	uniforms.channelWidth = phy::lipidBilayerWidth / metricFactor;
+	uniforms.opacity = 0.5f;
 
 	channelsRenderProgram->use();
 	channelsRenderProgram->setUniforms(uniforms);
@@ -299,7 +301,22 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		log(simulation->logfile, "[-] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
 	}
 
+	// O - opacity -0.1
+	if (key == GLFW_KEY_O && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		if (simulation->uniforms.opacity > 0.1f)
+			simulation->uniforms.opacity -= 0.1f;
+		log(simulation->logfile, "[-] Lipid bilayer opacity changed, opacity = " + std::to_string(simulation->uniforms.opacity));
+	}
+
+	// P - opacity +0.1
+	if (key == GLFW_KEY_P && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		if (simulation->uniforms.opacity < 1.0f)
+			simulation->uniforms.opacity += 0.1f;
+		log(simulation->logfile, "[+] Lipid bilayer opacity changed, opacity = " + std::to_string(simulation->uniforms.opacity));
+	}
+
 	// TODO lock current simulation state before changing timeFactor
+	// TODO better camera movement adjustment
 	// RIGHT - time speed + 20%
 	if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->timeFactor *= 1.2f;
@@ -631,19 +648,16 @@ inline void Simulation::render()
 {
 	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glm::mat4 viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
-
-	// render neuron
-	neuron->render();
+	uniforms.viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
 
 	// render channels
 	size_t channelsOffset = 0;
 
 	channelsRenderProgram->use();
-	channelsRenderProgram->setViewMatrix(viewMatrix);
 
 	uniforms.channelRadius = channelRadius[channel::NAP];
 	channelsRenderProgram->setUniforms(uniforms);
+
 	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture);
 	glBindVertexArray(NapIonsChannelsVAO);
 	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsNum);
@@ -651,6 +665,7 @@ inline void Simulation::render()
 
 	uniforms.channelRadius = channelRadius[channel::KP];
 	channelsRenderProgram->setUniforms(uniforms);
+
 	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture);
 	glBindVertexArray(KpIonsChannelsVAO);
 	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsNum);
@@ -660,10 +675,10 @@ inline void Simulation::render()
 	size_t ionsOffset = 0;
 
 	ionsRenderProgram->use();
-	ionsRenderProgram->setViewMatrix(viewMatrix);
 
 	uniforms.ionRadius = particleRadius[particle::NAP];
 	ionsRenderProgram->setUniforms(uniforms);
+
 	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
 	glBindVertexArray(NapIonsVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.NapIonsNum);
@@ -671,6 +686,7 @@ inline void Simulation::render()
 
 	uniforms.ionRadius = particleRadius[particle::KP];
 	ionsRenderProgram->setUniforms(uniforms);
+
 	glBindTexture(GL_TEXTURE_2D, KpIonTexture);
 	glBindVertexArray(KpIonsVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.KpIonsNum);
@@ -678,6 +694,7 @@ inline void Simulation::render()
 
 	uniforms.ionRadius = particleRadius[particle::CLM];
 	ionsRenderProgram->setUniforms(uniforms);
+
 	glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
 	glBindVertexArray(ClmIonsVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.ClmIonsNum);
@@ -685,10 +702,14 @@ inline void Simulation::render()
 
 	uniforms.ionRadius = particleRadius[particle::MASSIVEION];
 	ionsRenderProgram->setUniforms(uniforms);
+
 	glBindTexture(GL_TEXTURE_2D, otherParticlesTexture);
 	glBindVertexArray(otherParticlesVAO);
 	glDrawArrays(GL_POINTS, ionsOffset, config.otherParticlesNum);
 	ionsOffset += config.otherParticlesNum;
+
+	// render neuron
+	neuron->render(uniforms);
 
 	glFlush();
 	glfwSwapBuffers(window);
@@ -713,6 +734,8 @@ Simulation::~Simulation()
 {
 	glfwTerminate();
 	delete neuron;
+	delete ionsRenderProgram;
+	delete channelsRenderProgram;
 	logfile.close();
 }
 

@@ -3,6 +3,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 #include <vector>
 
@@ -34,6 +35,7 @@ namespace phy {
 	constexpr double e = 1.60218e-19;
 	constexpr double k = 1.2839342030e+8;
 	constexpr double u1 = 1.6605389274e-27;
+	constexpr double pi = 3.14159265359;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 	constexpr double NapOpenTreshold = -40e-3;
@@ -64,8 +66,43 @@ namespace phy {
 	constexpr double KpChR = 34 * A;
 }
 
+struct UCoord3 {
+	unsigned coords[3];
+};
+
+struct FCoord8 {
+	float coords[8];
+};
+
 static inline double getRandDouble(double min, double max) {
 	return ((max - min) * ((double)rand() / (double)RAND_MAX) + min);
+}
+
+static GLuint generateVAO(std::vector<FCoord8>* vertices, std::vector<UCoord3>* indices) {
+	GLuint VAO, VBO, EBO;
+	glGenBuffers(1, &VBO);
+	glGenBuffers(1, &EBO);
+	glGenVertexArrays(1, &VAO);
+
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+
+	glBufferData(GL_ARRAY_BUFFER, vertices->size() * 8 * sizeof(GLfloat), &(*vertices)[0], GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices->size() * 3 * sizeof(GLuint), &(*indices)[0], GL_STATIC_DRAW);
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+	glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(5 * sizeof(GLfloat)));
+	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
+	glEnableVertexAttribArray(2);
+
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+	return VAO;
 }
 
 static Particle* newParticle(double boundaries, particle::Type type) {

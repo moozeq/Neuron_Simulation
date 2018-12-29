@@ -25,10 +25,8 @@ to add new uniform, change:
 		GLfloat ionRadius;
 		GLfloat channelRadius;
 		GLfloat channelWidth;
-		GLint NapIonTexture;
-		GLint NapChannelTexture;
-		GLint KpIonTexture;
-		GLint KpChannelTexture;
+		GLfloat opacity;
+		glm::mat4 viewMatrix;
 	};
 }
 
@@ -40,12 +38,7 @@ class ShaderProgram
 	GLuint ionRadiusLoc;
 	GLuint channelRadiusLoc;
 	GLuint channelWidthLoc;
-
-	GLuint NapIonTextureLoc;
-	GLuint NApChannelTextureLoc;
-
-	GLuint KpIonTextureLoc;
-	GLuint KpChannelTextureLoc;
+	GLuint opacityLoc;
 
 	// view uniforms
 	GLuint viewMatrixLoc;
@@ -132,6 +125,7 @@ public:
 		ionRadiusLoc = glGetUniformLocation(id, "ionRadius");
 		channelRadiusLoc = glGetUniformLocation(id, "channelRadius");
 		channelWidthLoc = glGetUniformLocation(id, "channelWidth");
+		opacityLoc = glGetUniformLocation(id, "opacity");
 
 		// view uniform here
 		viewMatrixLoc = glGetUniformLocation(id, "viewMatrix");
@@ -145,10 +139,8 @@ public:
 		glUniform1f(ionRadiusLoc, uniforms.ionRadius);
 		glUniform1f(channelRadiusLoc, uniforms.channelRadius);
 		glUniform1f(channelWidthLoc, uniforms.channelWidth);
-	}
-
-	void setViewMatrix(glm::mat4 viewMatrix) {
-		glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(viewMatrix));
+		glUniform1f(opacityLoc, uniforms.opacity);
+		glUniformMatrix4fv(viewMatrixLoc, 1, GL_FALSE, glm::value_ptr(uniforms.viewMatrix));
 	}
 
 	void use(void) const {

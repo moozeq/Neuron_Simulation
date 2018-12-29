@@ -1,13 +1,16 @@
 #version 450 core
 
-out vec4 color;
-
+uniform sampler2D bilayerTexture;
 uniform float opacity;
-uniform uint red;
-uniform uint green;
-uniform uint blue;
+
+in vec3 vertFragPos;
+in vec2 vertTexCoord;
+in vec3 vertNormal;
+
+out vec4 color;
 
 void main()
 {
-	color = vec4(red, green, blue, opacity);
+	color = texture(bilayerTexture, vertTexCoord);
+	color.a = opacity;
 } 

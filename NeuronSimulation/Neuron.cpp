@@ -1,7 +1,10 @@
 #include "Neuron.h"
 
-void Neuron::addBarrier(float x, float y, float z, float radius, float width, float NapChannelsDensity, float KpChannelsDensity)
+void Neuron::addBarrier(float x, float y, float z, float radius, float length, float NapChannelsDensity, float KpChannelsDensity)
 {
+	float coords[3] = { x, y, z };
+	insideLayer.push_back(Barrier(coords, radius, length));
+	outsideLayer.push_back(Barrier(coords, radius + lipidBilayerWidth, length));
 }
 
 void Neuron::setupPrograms() {
@@ -14,16 +17,9 @@ void Neuron::setupPrograms() {
 
 void Neuron::setupStructures()
 {
+	addBarrier(0.0f, 0.0f, 0.0f, 0.125f, 0.25f, 10.0f, 0.0f);
+	addBarrier(0.25f, 0.0f, 0.0f, 0.25f, 0.25f, 10.0f, 0.0f);
 
-}
-
-Neuron::Neuron(double _metricFactor, double _timeFactor) :
-	metricFactor(_metricFactor), timeFactor(_timeFactor)
-{
-	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
-	setupPrograms();
-
-	addBarrier(0, 0, 0, 0.5f, 0.5f, 10.0f, 0.0f);
 
 	float start[3] = { 0.0f, 0.0f, 0.0f };
 	float stop[3] = { 0.0f - lipidBilayerWidth, 0.0f, 0.0f };
@@ -36,15 +32,30 @@ Neuron::Neuron(double _metricFactor, double _timeFactor) :
 	//channels.push_back(Channel(start3, stop3, channel::NAP, channel::VOLTAGE_GATED));
 }
 
+Neuron::Neuron(double _metricFactor, double _timeFactor) :
+	metricFactor(_metricFactor), timeFactor(_timeFactor)
+{
+	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
+	setupPrograms();
+	setupStructures();
+}
+
 Neuron::~Neuron()
 {
-
+	delete barriersRenderProgram;
 }
 
 
-void Neuron::render()
+void Neuron::render(shader::Uniforms uniforms)
 {
+	barriersRenderProgram->use();
+	barriersRenderProgram->setUniforms(uniforms);
 
+	for (Barrier& barrier : outsideLayer)
+		barrier.render();
+
+	for (Barrier& barrier : insideLayer)
+		barrier.render();
 }
 
 std::vector<float> Neuron::getChannels()

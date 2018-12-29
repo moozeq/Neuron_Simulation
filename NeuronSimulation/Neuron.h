@@ -1,7 +1,6 @@
 #pragma once
 #include "Utilities.h"
 #include "Barrier.h"
-#include "Channel.h"
 
 class Neuron
 {
@@ -10,14 +9,15 @@ class Neuron
 	ShaderProgram* barriersRenderProgram;
 
 	std::vector<Channel> channels;
-
+	std::vector<Barrier> insideLayer;
+	std::vector<Barrier> outsideLayer;
 	GLuint channelsPosBuf;
 
 	double lipidBilayerWidth;
 	double metricFactor;
 	double timeFactor;
 
-	void addBarrier(float x, float y, float z, float radius, float width, float NapChannelsDensity, float KpChannelsDensity);
+	void addBarrier(float x, float y, float z, float radius, float length, float NapChannelsDensity, float KpChannelsDensity);
 
 	void setupPrograms();
 	void setupStructures();
@@ -25,7 +25,6 @@ class Neuron
 public:
 	Neuron(double _metricFactor, double _timeFactor);
 	~Neuron();
-	void render();
+	void render(shader::Uniforms uniforms);
 	std::vector<float> getChannels();
 };
-
