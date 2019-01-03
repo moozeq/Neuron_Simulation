@@ -27,4 +27,5 @@ public:
 	~Neuron();
 	void render(shader::Uniforms uniforms);
 	std::vector<float> getChannels();
+	bool checkCollision(Particle& nextParticleState, const Particle& oldParticleState, const particle::Type type);
 };

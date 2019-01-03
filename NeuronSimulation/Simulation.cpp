@@ -426,7 +426,7 @@ inline void Simulation::updateChannelsStates()
 		float Eout = 0.0f;
 		float U = 0.0f;
 
-		// calc electric field inside neuron
+		// calc voltage inside neuron
 		for (long j = 0; j < particlesBufferSize; ++j) {
 			particle = &particles[bufferNum][j];
 
@@ -441,7 +441,7 @@ inline void Simulation::updateChannelsStates()
 			Ein += phy::k * particle->charge / (metricFactor * d);
 		}
 
-		// calc electric field outside neuron
+		// calc voltage outside neuron
 		for (long j = 0; j < particlesBufferSize; ++j) {
 			particle = &particles[bufferNum][j];
 
@@ -572,11 +572,6 @@ inline void Simulation::updateParticlesPositions()
 			az -= partAccOther * dz;
 		}
 
-		// old coordinates
-		float ox = prevParticle.x;
-		float oy = prevParticle.y;
-		float oz = prevParticle.z;
-
 		// muliply by part of acceleration which depends on current particle
 		double axdt = ax * partAccOriginDt;
 		double aydt = ay * partAccOriginDt;
@@ -585,47 +580,27 @@ inline void Simulation::updateParticlesPositions()
 		// new coordinates
 		// new coordinates: x = x0 + vx0 * dt + ax * dt^2 / 2
 		// 'axdt = ax * dt' so optimized equation: x += dt * (vx0 + axdt / 2)
-		float nx = ox + deltaTime * (currParticle.vx + axdt / 2);
-		float ny = oy + deltaTime * (currParticle.vy + aydt / 2);
-		float nz = oz + deltaTime * (currParticle.vz + azdt / 2);
-
-		// all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
-		particlesPos[i * 3 + 0] = currParticle.x = nx;
-		particlesPos[i * 3 + 1] = currParticle.y = ny;
-		particlesPos[i * 3 + 2] = currParticle.z = nz;
+		currParticle.x = prevParticle.x + deltaTime * (currParticle.vx + axdt / 2);
+		currParticle.y = prevParticle.y + deltaTime * (currParticle.vy + aydt / 2);
+		currParticle.z = prevParticle.z + deltaTime * (currParticle.vz + azdt / 2);
 
 		// update velocities: vx = vx0 + ax * dt
 		currParticle.vx += axdt;
 		currParticle.vy += aydt;
 		currParticle.vz += azdt;
 
-		// collision detection and reaction
-		if (nx <= -1.0f || nx >= 1.0f) {
-			if (nx <= -1.0f)
-				particlesPos[i * 3 + 0] = currParticle.x = nx = -2.0f - nx;
-			else
-				particlesPos[i * 3 + 0] = currParticle.x = nx = 2.0f - nx;
+		// check if collide with lipid bilayer and if, then check if bounced or pass through channel
+		if (i >= 0 && i < config.NapIonsNum)
+			neuron->checkCollision(currParticle, prevParticle, particle::NAP);
+		else if (i >= config.NapIonsNum && i < config.NapIonsNum + config.KpIonsNum)
+			neuron->checkCollision(currParticle, prevParticle, particle::KP);
+		else if (i >= config.NapIonsNum + config.KpIonsNum && i < config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum)
+			neuron->checkCollision(currParticle, prevParticle, particle::CLM);
 
-			currParticle.vx -= 2 * currParticle.vx;
-		}
-
-		if (ny <= -1.0f || ny >= 1.0f) {
-			if (ny <= -1.0f)
-				particlesPos[i * 3 + 1] = currParticle.y = ny = -2.0f - ny;
-			else
-				particlesPos[i * 3 + 1] = currParticle.y = ny = 2.0f - ny;
-
-			currParticle.vy -= 2 * currParticle.vy;
-		}
-
-		if (nz <= -1.0f || nz >= 1.0f) {
-			if (nz <= -1.0f)
-				particlesPos[i * 3 + 2] = currParticle.z = nz = -2.0f - nz;
-			else
-				particlesPos[i * 3 + 2] = currParticle.z = nz = 2.0f - nz;
-
-			currParticle.vz -= 2 * currParticle.vz;
-		}
+		// update positions, all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
+		particlesPos[i * 3 + 0] = currParticle.x;
+		particlesPos[i * 3 + 1] = currParticle.y;
+		particlesPos[i * 3 + 2] = currParticle.z;
 	}
 }
 

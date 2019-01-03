@@ -2,6 +2,7 @@
 #include "Utilities.h"
 
 namespace channel {
+	// must be in same order as in particle namespace
 	enum Type {
 		NAP, KP, TYPES_COUNT
 	};

@@ -35,7 +35,8 @@ class Barrier
 
 public:
 	Barrier(float coords[3], float _radius, float _length);
-	bool checkCollision(float coordinates[6]);
+	bool checkCollision(float newCoords[3], float oldCoords[3]);
+	bool getCollisionPoint(float* point, float newCoords[3], float oldCoords[3]);
 	void render();
 };
 

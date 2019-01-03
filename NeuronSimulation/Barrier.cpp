@@ -61,13 +61,24 @@ Barrier::Barrier(float coords[3], float _radius, float _length) :
 	bilayerTexture = loadMipmapTexture(GL_TEXTURE0, "bilayer.png");
 }
 
-bool Barrier::checkCollision(float coordinates[6])
+bool Barrier::checkCollision(float newCoords[3], float oldCoords[3])
 {
+	// TODO
 	return false;
+}
+
+bool Barrier::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3])
+{
+	// TODO
+	point[0] = point[1] = point[2] = 0.0f;
+
+	return true;
 }
 
 void Barrier::render()
 {
+	// only open barriers for now
+
 	/*glBindTexture(GL_TEXTURE_2D, circlesTexture);
 	glBindVertexArray(circleVAO);
 	glDrawElements(GL_TRIANGLES, circlesIndices.size() * 3, GL_UNSIGNED_INT, 0);*/

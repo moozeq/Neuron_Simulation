@@ -22,9 +22,9 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 100;
-	config.KpIonsNum = 100;
-	config.ClmIonsNum = 200;
+	config.NapIonsNum = 5000;
+	config.KpIonsNum = 5000;
+	config.ClmIonsNum = 1000;
 	config.otherParticlesNum = 0;
 
 	config.NapIonsChannelsNum = 1;
