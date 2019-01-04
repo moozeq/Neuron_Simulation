@@ -20,6 +20,9 @@ class Neuron
 	double NapChannelsDensity;
 	double KpChannelsDensity;
 
+	unsigned NapChannelsCount;
+	unsigned KpChannelsCount;
+
 	float addBarrier(float x, float y, float z, float radius, float length);
 
 	void setupPrograms();

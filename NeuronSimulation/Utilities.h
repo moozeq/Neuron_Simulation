@@ -42,17 +42,17 @@ namespace phy {
 	constexpr double NapOpenTime = 1e-3;
 	constexpr double NapInactiveTime = 1e-3;
 
-	constexpr double NapR = 10.16 * A;
+	constexpr double NapR = 1.16 * A;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
 	constexpr double NapA = k * NapC / NapM;
 
-	constexpr double KpR = 10.52 * A;
+	constexpr double KpR = 1.52 * A;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 	constexpr double KpA = k * KpC / KpM;
 
-	constexpr double ClmR = 10.67 * A;
+	constexpr double ClmR = 1.67 * A;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;

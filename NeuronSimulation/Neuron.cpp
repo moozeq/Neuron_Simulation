@@ -23,12 +23,12 @@ void Neuron::setupPrograms() {
 void Neuron::setupStructures()
 {
 	float barrierRadius = 0.125f;
-	float barrierLength = 2.0f;
+	float barrierLength = 1.0f;
 
 	// barrier real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
 	float area = addBarrier(0.0f, 0.0f, 0.0f, barrierRadius, barrierLength);
-	unsigned NapChannelsCount = area * NapChannelsDensity;
-	unsigned KpChannelsCount = area * KpChannelsDensity;
+	NapChannelsCount = area * NapChannelsDensity;
+	KpChannelsCount = area * KpChannelsDensity;
 
 	outsideLayer[0].NapChannelsIndexFrom = insideLayer[0].NapChannelsIndexFrom = 0;
 	outsideLayer[0].NapChannelsIndexTo = insideLayer[0].NapChannelsIndexTo = NapChannelsCount;
@@ -125,84 +125,7 @@ std::vector<float> Neuron::getChannels()
 
 bool Neuron::checkCollision(Particle& nextParticleState, const Particle& oldParticleState, const particle::Type type)
 {
-	for (Barrier& barrier : outsideLayer) {
-		float newCoords[3] = { nextParticleState.x, nextParticleState.y, nextParticleState.z };
-		float oldCoords[3] = { oldParticleState.x, oldParticleState.y, oldParticleState.z };
-
-		// barriers do not overlap, detect if collide with current barrier
-		if (barrier.checkCollision(newCoords, oldCoords)) {
-			float collisionPoint[3];
-			barrier.getCollisionPoint(collisionPoint, newCoords, oldCoords);
-
-			// checking only channels with proper type
-			unsigned channelsIndexFrom, channelsIndexTo;
-			if (type == particle::NAP) {
-				channelsIndexFrom = barrier.NapChannelsIndexFrom;
-				channelsIndexTo = barrier.NapChannelsIndexTo;
-			}
-			else if (type == particle::KP) {
-				channelsIndexFrom = barrier.KpChannelsIndexFrom;
-				channelsIndexTo = barrier.KpChannelsIndexTo;
-			}
-			else
-				channelsIndexFrom = channelsIndexTo = 0;
-
-			// check if collide with channel from current barrier
-			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
-				const Channel& currentChannel = channels[i];
-
-				// check if channel is open and if ion type is appropriate to channel type
-				if (currentChannel.state != channel::OPEN)
-					continue;
-
-				// coordsOut because its >>> outside layer <<<
-				float dx, dy, dz, d;
-				dx = currentChannel.xOut - collisionPoint[0];
-				dy = currentChannel.yOut - collisionPoint[1];
-				dz = currentChannel.zOut - collisionPoint[2];
-				d = metricFactor * sqrt(dx * dx + dy * dy + dz * dz);
-
-				// collision point is within channel radius and channel is open
-				if (d < currentChannel.radius) {
-
-					// particle passed through channel >>> outside layer <<<
-					nextParticleState.x = currentChannel.xIn;
-					nextParticleState.y = currentChannel.yIn;
-					nextParticleState.z = currentChannel.zIn;
-
-					// change direction of particle's velocity vector  >>> outside layer <<<
-					glm::vec3 channelVec = glm::vec3(currentChannel.xIn - currentChannel.xOut, currentChannel.yIn - currentChannel.yOut, currentChannel.zIn - currentChannel.zOut);
-					channelVec = glm::normalize(channelVec);
-					float v = sqrt(oldParticleState.vx * oldParticleState.vx + oldParticleState.vy * oldParticleState.vy + oldParticleState.vz * oldParticleState.vz);
-					nextParticleState.vx = v * channelVec[0];
-					nextParticleState.vy = v * channelVec[1];
-					nextParticleState.vz = v * channelVec[2];
-
-					// collide with channel
-					return true;
-				}
-			}
-
-			// TODO collide with barrier change coords and velocity
-			float center[3] = { barrier.x0, barrier.y0, barrier.z0 };
-			float h = getPointOnLineDistanceFromCenter(collisionPoint, center, barrier.radius);
-			glm::vec3 n;
-			if (nextParticleState.x <= barrier.x0)
-				n = glm::normalize(glm::vec3(barrier.x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
-			else
-				n = glm::normalize(glm::vec3(barrier.x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
-			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
-			nextParticleState.x = oldCoords[0];
-			nextParticleState.y = oldCoords[1];
-			nextParticleState.z = oldCoords[2];
-			
-			nextParticleState.vx = newVelocity[0];
-			nextParticleState.vy = newVelocity[1];
-			nextParticleState.vz = newVelocity[2];
-			return true;
-		}
-	}
-
+	// FIXME only one barrier checking, merge?
 	for (Barrier& barrier : insideLayer) {
 		float newCoords[3] = { nextParticleState.x, nextParticleState.y, nextParticleState.z };
 		float oldCoords[3] = { oldParticleState.x, oldParticleState.y, oldParticleState.z };
@@ -250,6 +173,84 @@ bool Neuron::checkCollision(Particle& nextParticleState, const Particle& oldPart
 
 					// change direction of particle's velocity vector  >>> inside layer <<<
 					glm::vec3 channelVec = glm::vec3(currentChannel.xOut - currentChannel.xIn, currentChannel.yOut - currentChannel.yIn, currentChannel.zOut - currentChannel.zIn);
+					channelVec = glm::normalize(channelVec);
+					float v = sqrt(oldParticleState.vx * oldParticleState.vx + oldParticleState.vy * oldParticleState.vy + oldParticleState.vz * oldParticleState.vz);
+					nextParticleState.vx = v * channelVec[0];
+					nextParticleState.vy = v * channelVec[1];
+					nextParticleState.vz = v * channelVec[2];
+
+					// collide with channel
+					return true;
+				}
+			}
+
+			// TODO collide with barrier change coords and velocity
+			float center[3] = { barrier.x0, barrier.y0, barrier.z0 };
+			float h = getPointOnLineDistanceFromCenter(collisionPoint, center, barrier.radius);
+			glm::vec3 n;
+			if (nextParticleState.x <= barrier.x0)
+				n = glm::normalize(glm::vec3(barrier.x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+			else
+				n = glm::normalize(glm::vec3(barrier.x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
+			nextParticleState.x = oldCoords[0];
+			nextParticleState.y = oldCoords[1];
+			nextParticleState.z = oldCoords[2];
+
+			nextParticleState.vx = newVelocity[0];
+			nextParticleState.vy = newVelocity[1];
+			nextParticleState.vz = newVelocity[2];
+			return true;
+		}
+	}
+
+	for (Barrier& barrier : outsideLayer) {
+		float newCoords[3] = { nextParticleState.x, nextParticleState.y, nextParticleState.z };
+		float oldCoords[3] = { oldParticleState.x, oldParticleState.y, oldParticleState.z };
+
+		// barriers do not overlap, detect if collide with current barrier
+		if (barrier.checkCollision(newCoords, oldCoords)) {
+			float collisionPoint[3];
+			barrier.getCollisionPoint(collisionPoint, newCoords, oldCoords);
+
+			// checking only channels with proper type
+			unsigned channelsIndexFrom, channelsIndexTo;
+			if (type == particle::NAP) {
+				channelsIndexFrom = barrier.NapChannelsIndexFrom;
+				channelsIndexTo = barrier.NapChannelsIndexTo;
+			}
+			else if (type == particle::KP) {
+				channelsIndexFrom = barrier.KpChannelsIndexFrom;
+				channelsIndexTo = barrier.KpChannelsIndexTo;
+			}
+			else
+				channelsIndexFrom = channelsIndexTo = 0;
+
+			// check if collide with channel from current barrier
+			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
+				const Channel& currentChannel = channels[i];
+
+				// check if channel is open and if ion type is appropriate to channel type
+				if (currentChannel.state != channel::OPEN)
+					continue;
+
+				// coordsOut because its >>> outside layer <<<
+				float dx, dy, dz, d;
+				dx = currentChannel.xOut - collisionPoint[0];
+				dy = currentChannel.yOut - collisionPoint[1];
+				dz = currentChannel.zOut - collisionPoint[2];
+				d = metricFactor * sqrt(dx * dx + dy * dy + dz * dz);
+
+				// collision point is within channel radius and channel is open
+				if (d < currentChannel.radius) {
+
+					// particle passed through channel >>> outside layer <<<
+					nextParticleState.x = currentChannel.xIn;
+					nextParticleState.y = currentChannel.yIn;
+					nextParticleState.z = currentChannel.zIn;
+
+					// change direction of particle's velocity vector  >>> outside layer <<<
+					glm::vec3 channelVec = glm::vec3(currentChannel.xIn - currentChannel.xOut, currentChannel.yIn - currentChannel.yOut, currentChannel.zIn - currentChannel.zOut);
 					channelVec = glm::normalize(channelVec);
 					float v = sqrt(oldParticleState.vx * oldParticleState.vx + oldParticleState.vy * oldParticleState.vy + oldParticleState.vz * oldParticleState.vz);
 					nextParticleState.vx = v * channelVec[0];

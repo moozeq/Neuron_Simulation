@@ -18,7 +18,7 @@ To add new particle:
 namespace particle {
 	// must be in same order as in channels namespace
 	enum Type {
-		NAP, KP, CLM, MASSIVEION, TYPES_COUNT
+		NONE = -1, NAP, KP, CLM, MASSIVEION, TYPES_COUNT
 	};
 }
 

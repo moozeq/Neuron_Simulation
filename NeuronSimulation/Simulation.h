@@ -76,6 +76,8 @@ class Simulation
 	// channels structs
 	float channelRadius[channel::TYPES_COUNT];
 	long channelsBufferSize;
+	unsigned NapChannelsCount;
+	unsigned KpChannelsCount;
 	float* channelsAttribs;
 
 /* -----------------NEURON----------------- */

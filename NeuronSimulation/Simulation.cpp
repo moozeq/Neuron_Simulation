@@ -12,7 +12,6 @@ void Simulation::loadConfig(const Config& _config)
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
 	particlesBufferSize = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
-	channelsBufferSize = config.NapIonsChannelsDensity + config.KpIonsChannelsDensity;
 	bufferNum = 0;
 	ice = false;
 	rewind = false;
@@ -99,6 +98,9 @@ void Simulation::setupStructures()
 void Simulation::setupNeuronStructures()
 {
 	neuron = new Neuron(metricFactor, timeFactor, config.NapIonsChannelsDensity, config.KpIonsChannelsDensity);
+	channelsBufferSize = neuron->channels.size();
+	NapChannelsCount = neuron->NapChannelsCount;
+	KpChannelsCount = neuron->KpChannelsCount;
 }
 
 void Simulation::setupParticlesStructures()
@@ -245,10 +247,9 @@ void Simulation::setupChannelsBuffers()
 	glCreateBuffers(1, &channelsBuf);
 
 	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-	GLsizei channelBufferSize = (GLsizei)neuron->channels.size() * 4 * sizeof(GLfloat);
 	std::vector<float> channels = neuron->getChannels();
 
-	glNamedBufferStorage(channelsBuf, channelBufferSize, &channels[0], flags);
+	glNamedBufferStorage(channelsBuf, channelsBufferSize * 4 * sizeof(GLfloat), &channels[0], flags);
 
 	// positions
 	glVertexArrayVertexBuffer(NapIonsChannelsVAO, 0, channelsBuf, 0, 4 * sizeof(GLfloat));
@@ -590,8 +591,8 @@ inline void Simulation::updateParticlesPositions()
 			neuron->checkCollision(currParticle, prevParticle, particle::NAP);
 		else if (i >= config.NapIonsNum && i < config.NapIonsNum + config.KpIonsNum)
 			neuron->checkCollision(currParticle, prevParticle, particle::KP);
-		else if (i >= config.NapIonsNum + config.KpIonsNum && i < config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum)
-			neuron->checkCollision(currParticle, prevParticle, particle::CLM);
+		else
+			neuron->checkCollision(currParticle, prevParticle, particle::NONE);
 
 		// update positions, all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
 		particlesPos[i * 3 + 0] = currParticle.x;
@@ -633,16 +634,16 @@ inline void Simulation::render()
 
 	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture);
 	glBindVertexArray(NapIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsDensity);
-	channelsOffset += config.NapIonsChannelsDensity;
+	glDrawArrays(GL_POINTS, channelsOffset, NapChannelsCount);
+	channelsOffset += NapChannelsCount;
 
 	uniforms.channelRadius = channelRadius[channel::KP];
 	channelsRenderProgram->setUniforms(uniforms);
 
 	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture);
 	glBindVertexArray(KpIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsDensity);
-	channelsOffset += config.KpIonsChannelsDensity;
+	glDrawArrays(GL_POINTS, channelsOffset, KpChannelsCount);
+	channelsOffset += KpChannelsCount;
 
 	// render ions
 	size_t ionsOffset = 0;
