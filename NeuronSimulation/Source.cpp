@@ -22,13 +22,13 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 5000;
-	config.KpIonsNum = 5000;
-	config.ClmIonsNum = 4000;
+	config.NapIonsNum = 500;
+	config.KpIonsNum = 000;
+	config.ClmIonsNum = 000;
 	config.otherParticlesNum = 0;
 
-	config.NapIonsChannelsDensity = 10000.0f;
-	config.KpIonsChannelsDensity = 1000.0f;
+	config.NapIonsChannelsDensity = 0000.0f;
+	config.KpIonsChannelsDensity = 000.0f;
 
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";

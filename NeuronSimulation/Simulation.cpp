@@ -192,6 +192,9 @@ void Simulation::setupBuffers()
 
 void Simulation::setupParticlesBuffers()
 {
+	if (particlesBufferSize == 0)
+		return;
+
 	GLuint particlesPosBuf;
 
 	// create vaos
@@ -204,7 +207,7 @@ void Simulation::setupParticlesBuffers()
 	glCreateBuffers(1, &particlesPosBuf);
 
 	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
-	GLsizei bufferSize = (GLsizei)particlesBufferSize * 3 * sizeof(GLfloat);
+	GLsizei bufferSize = particlesBufferSize * 3 * sizeof(GLfloat);
 	glNamedBufferStorage(particlesPosBuf, bufferSize, nullptr, flags);
 
 	glVertexArrayVertexBuffer(NapIonsVAO, 0, particlesPosBuf, 0, 3 * sizeof(GLfloat));
@@ -237,6 +240,9 @@ void Simulation::setupParticlesBuffers()
 
 void Simulation::setupChannelsBuffers()
 {
+	if (channelsBufferSize == 0)
+		return;
+
 	GLuint channelsBuf;
 
 	// create vaos

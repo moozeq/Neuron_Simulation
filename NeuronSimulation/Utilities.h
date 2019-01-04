@@ -41,18 +41,21 @@ namespace phy {
 	constexpr double NapOpenTreshold = -40e-3;
 	constexpr double NapOpenTime = 1e-3;
 	constexpr double NapInactiveTime = 1e-3;
+	
+	// CHANGEME temp  scale
+	constexpr double tempscale = 100;
 
-	constexpr double NapR = 1.16 * A;
+	constexpr double NapR = 1.16 * A * tempscale;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
 	constexpr double NapA = k * NapC / NapM;
 
-	constexpr double KpR = 1.52 * A;
+	constexpr double KpR = 1.52 * A * tempscale;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 	constexpr double KpA = k * KpC / KpM;
 
-	constexpr double ClmR = 1.67 * A;
+	constexpr double ClmR = 1.67 * A * tempscale;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;
@@ -87,6 +90,9 @@ static inline float getPointLineDistance(float point[3], float startPoint[3], fl
 
 static inline float getPointOnLineDistanceFromCenter(float point[3], float lineCenter[3], float radius) {
 	float d = glm::distance(glm::vec3(point[0], point[1], point[2]), glm::vec3(lineCenter[0], lineCenter[1], lineCenter[2]));
+	if (d < radius)
+		return 0;
+	
 	return sqrt(d * d - radius * radius);
 }
 
