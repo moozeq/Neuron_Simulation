@@ -4,7 +4,11 @@ void Neuron::addBarrier(float x, float y, float z, float radius, float length, f
 {
 	float coords[3] = { x, y, z };
 	insideLayer.push_back(Barrier(coords, radius, length));
-	outsideLayer.push_back(Barrier(coords, radius + lipidBilayerWidth, length));
+	outsideLayer.push_back(Barrier(coords, radius + lipidBilayerWidth, length + 2 * lipidBilayerWidth));
+	insideLayer[insideLayer.size() - 1].channelsIndexFrom = 0;
+	insideLayer[insideLayer.size() - 1].channelsIndexTo = 1;
+	outsideLayer[outsideLayer.size() - 1].channelsIndexFrom = 0;
+	outsideLayer[outsideLayer.size() - 1].channelsIndexTo = 1;
 }
 
 void Neuron::setupPrograms() {
@@ -18,7 +22,7 @@ void Neuron::setupPrograms() {
 void Neuron::setupStructures()
 {
 	addBarrier(0.0f, 0.0f, 0.0f, 0.125f, 0.25f, 10.0f, 0.0f);
-	addBarrier(0.25f, 0.0f, 0.0f, 0.25f, 0.25f, 10.0f, 0.0f);
+	//addBarrier(0.25f, 0.0f, 0.0f, 0.25f, 0.25f, 10.0f, 0.0f);
 
 
 	float start[3] = { 0.0f, 0.0f, 0.125f };
@@ -119,6 +123,21 @@ bool Neuron::checkCollision(Particle& nextParticleState, const Particle& oldPart
 			}
 
 			// TODO collide with barrier change coords and velocity
+			float center[3] = { barrier.x0, barrier.y0, barrier.z0 };
+			float h = getPointOnLineDistanceFromCenter(collisionPoint, center, barrier.radius);
+			glm::vec3 n;
+			if (nextParticleState.x <= barrier.x0)
+				n = glm::normalize(glm::vec3(barrier.x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+			else
+				n = glm::normalize(glm::vec3(barrier.x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
+			nextParticleState.x = oldCoords[0];
+			nextParticleState.y = oldCoords[1];
+			nextParticleState.z = oldCoords[2];
+			
+			nextParticleState.vx = newVelocity[0];
+			nextParticleState.vy = newVelocity[1];
+			nextParticleState.vz = newVelocity[2];
 			return true;
 		}
 	}
@@ -169,6 +188,21 @@ bool Neuron::checkCollision(Particle& nextParticleState, const Particle& oldPart
 			}
 
 			// TODO collide with barrier change coords and velocity
+			float center[3] = { barrier.x0, barrier.y0, barrier.z0 };
+			float h = getPointOnLineDistanceFromCenter(collisionPoint, center, barrier.radius);
+			glm::vec3 n;
+			if (nextParticleState.x <= barrier.x0)
+				n = glm::normalize(glm::vec3(barrier.x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+			else
+				n = glm::normalize(glm::vec3(barrier.x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
+			nextParticleState.x = oldCoords[0];
+			nextParticleState.y = oldCoords[1];
+			nextParticleState.z = oldCoords[2];
+			
+			nextParticleState.vx = newVelocity[0];
+			nextParticleState.vy = newVelocity[1];
+			nextParticleState.vz = newVelocity[2];
 			return true;
 		}
 	}

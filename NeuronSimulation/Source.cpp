@@ -14,7 +14,8 @@ int main(void)
 	// distance 1.0 in simulation is 1.0 um in real world
 	config.metricFactor = 1e-6;
 	// time 1.0 in simulation is 1.0 ps in real world
-	config.timeFactor = 1e-12;
+	//config.timeFactor = 1e-12;
+	config.timeFactor = 1e-9;
 
 	config.buffersNum = 2;
 
@@ -22,9 +23,9 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 5000;
-	config.KpIonsNum = 5000;
-	config.ClmIonsNum = 1000;
+	config.NapIonsNum = 50;
+	config.KpIonsNum = 40;
+	config.ClmIonsNum = 10;
 	config.otherParticlesNum = 0;
 
 	config.NapIonsChannelsNum = 1;

@@ -42,17 +42,17 @@ namespace phy {
 	constexpr double NapOpenTime = 1e-3;
 	constexpr double NapInactiveTime = 1e-3;
 
-	constexpr double NapR = 1.16 * A;
+	constexpr double NapR = 10.16 * A;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
 	constexpr double NapA = k * NapC / NapM;
 
-	constexpr double KpR = 1.52 * A;
+	constexpr double KpR = 10.52 * A;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 	constexpr double KpA = k * KpC / KpM;
 
-	constexpr double ClmR = 1.67 * A;
+	constexpr double ClmR = 10.67 * A;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;
@@ -76,6 +76,18 @@ struct FCoord8 {
 
 static inline double getRandDouble(double min, double max) {
 	return ((max - min) * ((double)rand() / (double)RAND_MAX) + min);
+}
+
+static inline float getPointLineDistance(float point[3], float startPoint[3], float stopPoint[3]) {
+	glm::vec3 X0X1 = glm::vec3(point[0] - startPoint[0], point[1] - startPoint[1], point[2] - startPoint[2]);
+	glm::vec3 X0X2 = glm::vec3(point[0] - stopPoint[0], point[1] - stopPoint[1], point[2] - stopPoint[2]);
+	glm::vec3 X2X1 = glm::vec3(stopPoint[0] - startPoint[0], stopPoint[1] - startPoint[1], stopPoint[2] - startPoint[2]);
+	return glm::length(glm::cross(X0X1, X0X2)) / glm::length(X2X1);
+}
+
+static inline float getPointOnLineDistanceFromCenter(float point[3], float lineCenter[3], float radius) {
+	float d = glm::distance(glm::vec3(point[0], point[1], point[2]), glm::vec3(lineCenter[0], lineCenter[1], lineCenter[2]));
+	return sqrt(d * d - radius * radius);
 }
 
 static GLuint generateVAO(std::vector<FCoord8>* vertices, std::vector<UCoord3>* indices) {
@@ -103,6 +115,45 @@ static GLuint generateVAO(std::vector<FCoord8>* vertices, std::vector<UCoord3>* 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 	return VAO;
+}
+
+static Particle* newParticle(float x, float y, float z, particle::Type type) {
+	Particle* particle = new Particle();
+	particle->vx = 0.0;
+	particle->vy = 0.0;
+	particle->vz = 0.0;
+	particle->x = x;
+	particle->y = y;
+	particle->z = z;
+
+	switch (type) {
+	case particle::NAP:
+		particle->charge = phy::NapC;
+		particle->mass = phy::NapM;
+		break;
+
+	case particle::KP:
+		particle->charge = phy::KpC;
+		particle->mass = phy::KpM;
+		break;
+
+	case particle::CLM:
+		particle->charge = phy::ClmC;
+		particle->mass = phy::ClmM;
+		break;
+
+	case particle::MASSIVEION:
+		particle->charge = phy::MIC;
+		particle->mass = phy::MIM;
+		break;
+
+	default:
+		particle->charge = 0.0;
+		particle->mass = phy::u1;
+		break;
+	}
+
+	return particle;
 }
 
 static Particle* newParticle(double boundaries, particle::Type type) {

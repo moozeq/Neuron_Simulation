@@ -17,6 +17,9 @@ class Barrier
 	float x0;
 	float y0;
 	float z0;
+
+	float startCoords[3];
+	float stopCoords[3];
 	
 	GLuint circleVAO;
 	GLuint layerVAO;

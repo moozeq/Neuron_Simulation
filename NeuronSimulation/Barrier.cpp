@@ -54,6 +54,14 @@ void Barrier::addCircle()
 Barrier::Barrier(float coords[3], float _radius, float _length) :
 	x0(coords[0]), y0(coords[1]), z0(coords[2]), radius(_radius), length(_length), slices(30)
 {
+	startCoords[0] = coords[0] - _length / 2;
+	startCoords[1] = coords[1];
+	startCoords[2] = coords[2];
+
+	stopCoords[0] = coords[0] + _length / 2;
+	stopCoords[1] = coords[1];
+	stopCoords[2] = coords[2];
+
 	circleVAO = generateCircles();
 	layerVAO = generateBilayer();
 
@@ -63,25 +71,34 @@ Barrier::Barrier(float coords[3], float _radius, float _length) :
 
 bool Barrier::checkCollision(float newCoords[3], float oldCoords[3])
 {
-	// TODO
-	return false;
+	// not in barrier length
+	if (!(newCoords[0] <= stopCoords[0] && newCoords[0] >= startCoords[0] &&
+		oldCoords[0] <= stopCoords[0] && oldCoords[0] >= startCoords[0]))
+		return false;
+
+	float oldD = getPointLineDistance(oldCoords, startCoords, stopCoords);
+	float newD = getPointLineDistance(newCoords, startCoords, stopCoords);
+	
+	if ((oldD < radius && newD >= radius) || (newD < radius && oldD >= radius))
+		return true;
+	else
+		return false;
 }
 
 bool Barrier::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3])
 {
 	// TODO
-	point[0] = point[1] = point[2] = 0.0f;
-
+	point[0] = (newCoords[0] + oldCoords[0]) / 2;
+	point[1] = (newCoords[1] + oldCoords[1]) / 2;
+	point[2] = (newCoords[2] + oldCoords[2]) / 2;
 	return true;
 }
 
 void Barrier::render()
 {
-	// only open barriers for now
-
-	/*glBindTexture(GL_TEXTURE_2D, circlesTexture);
+	glBindTexture(GL_TEXTURE_2D, circlesTexture);
 	glBindVertexArray(circleVAO);
-	glDrawElements(GL_TRIANGLES, circlesIndices.size() * 3, GL_UNSIGNED_INT, 0);*/
+	glDrawElements(GL_TRIANGLES, circlesIndices.size() * 3, GL_UNSIGNED_INT, 0);
 
 	glBindTexture(GL_TEXTURE_2D, bilayerTexture);
 	glBindVertexArray(layerVAO);

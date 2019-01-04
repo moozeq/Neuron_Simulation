@@ -111,7 +111,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.NapIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::NAP);
+		Particle* particle = newParticle(0.05, particle::NAP);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::NapA / metricFactorSq);
@@ -121,7 +121,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.KpIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::KP);
+		Particle* particle = newParticle(0.05, particle::KP);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::KpA / metricFactorSq);
@@ -131,7 +131,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.ClmIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::CLM);
+		Particle* particle = newParticle(0.05, particle::CLM);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::ClmA / metricFactorSq);
@@ -141,7 +141,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.otherParticlesNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.1, particle::MASSIVEION);
+		Particle* particle = newParticle(0.05, particle::MASSIVEION);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back((phy::k * particle->charge / particle->mass) / metricFactorSq);
@@ -466,7 +466,7 @@ inline void Simulation::updateChannelsStates()
 		case channel::CLOSED:
 			if (U > phy::NapOpenTreshold) {
 
-				log(logfile, "[C] Channel opened, U = " + std::to_string(U));
+				//log(logfile, "[C] Channel opened, U = " + std::to_string(U));
 
 				currChannel.state = channel::OPEN;
 				currChannel.timeLeft = phy::NapOpenTime;
@@ -477,13 +477,13 @@ inline void Simulation::updateChannelsStates()
 			
 			currChannel.timeLeft -= deltaTime;
 
-			log(logfile, "[O] Channel open, U = " + std::to_string(U));
+			//log(logfile, "[O] Channel open, U = " + std::to_string(U));
 			streamObj << currChannel.timeLeft;
-			log(logfile, "[O] Channel open, time left = " + streamObj.str());
+			//log(logfile, "[O] Channel open, time left = " + streamObj.str());
 
 			if (currChannel.timeLeft < 0.0f) {
 
-				log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
+				//log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
 
 				currChannel.state = channel::INACTIVE;
 				currChannel.timeLeft = phy::NapInactiveTime;
@@ -493,13 +493,13 @@ inline void Simulation::updateChannelsStates()
 		case channel::INACTIVE:
 			currChannel.timeLeft -= deltaTime;
 
-			log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
+			//log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
 			streamObj << currChannel.timeLeft;
-			log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
+			//log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
 				
 			if (currChannel.timeLeft < 0.0f) {
 
-				log(logfile, "[C] Channel closed, U = " + std::to_string(U));
+				//log(logfile, "[C] Channel closed, U = " + std::to_string(U));
 
 				currChannel.state = channel::CLOSED;
 				channelsAttribs[i * 4 + 3] = 0.0f;
@@ -601,6 +601,8 @@ inline void Simulation::updateParticlesPositions()
 		particlesPos[i * 3 + 0] = currParticle.x;
 		particlesPos[i * 3 + 1] = currParticle.y;
 		particlesPos[i * 3 + 2] = currParticle.z;
+
+		//log(logfile, "Particle pos: i = " + std::to_string(i) + ", x = " + std::to_string(currParticle.x) + ", y = " + std::to_string(currParticle.y) + ", z = " + std::to_string(currParticle.z));
 	}
 }
 
