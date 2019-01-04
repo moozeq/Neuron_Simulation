@@ -1,14 +1,15 @@
 #include "Neuron.h"
 
-void Neuron::addBarrier(float x, float y, float z, float radius, float length, float NapChannelsDensity, float KpChannelsDensity)
+float Neuron::addBarrier(float x, float y, float z, float radius, float length)
 {
 	float coords[3] = { x, y, z };
+	float area = 2 * phy::pi * radius * length;
+
 	insideLayer.push_back(Barrier(coords, radius, length));
-	outsideLayer.push_back(Barrier(coords, radius + lipidBilayerWidth, length + 2 * lipidBilayerWidth));
-	insideLayer[insideLayer.size() - 1].channelsIndexFrom = 0;
-	insideLayer[insideLayer.size() - 1].channelsIndexTo = 1;
-	outsideLayer[outsideLayer.size() - 1].channelsIndexFrom = 0;
-	outsideLayer[outsideLayer.size() - 1].channelsIndexTo = 1;
+	outsideLayer.push_back(Barrier(coords, radius + lipidBilayerWidth, length));
+
+	// returns area in metric factor squared
+	return area;
 }
 
 void Neuron::setupPrograms() {
@@ -21,23 +22,71 @@ void Neuron::setupPrograms() {
 
 void Neuron::setupStructures()
 {
-	addBarrier(0.0f, 0.0f, 0.0f, 0.125f, 0.25f, 10.0f, 0.0f);
-	//addBarrier(0.25f, 0.0f, 0.0f, 0.25f, 0.25f, 10.0f, 0.0f);
+	float barrierRadius = 0.125f;
+	float barrierLength = 2.0f;
 
+	// barrier real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
+	float area = addBarrier(0.0f, 0.0f, 0.0f, barrierRadius, barrierLength);
+	unsigned NapChannelsCount = area * NapChannelsDensity;
+	unsigned KpChannelsCount = area * KpChannelsDensity;
 
-	float start[3] = { 0.0f, 0.0f, 0.125f };
-	float stop[3] = { 0.0f, 0.0f, 0.125f + lipidBilayerWidth };
-	float start2[3] = { -0.5f, 0.0f, 0.0f };
-	float stop2[3] = { -0.6f, 0.0f, 0.0f };
-	float start3[3] = { -0.1f, 0.0f, 0.0f };
-	float stop3[3] = { -0.0f, 0.0f, 0.0f };
-	channels.push_back(Channel(start, stop, channel::NAP, channel::VOLTAGE_GATED));
-	//channels.push_back(Channel(start2, stop2, channel::NAP, channel::VOLTAGE_GATED));
-	//channels.push_back(Channel(start3, stop3, channel::NAP, channel::VOLTAGE_GATED));
+	outsideLayer[0].NapChannelsIndexFrom = insideLayer[0].NapChannelsIndexFrom = 0;
+	outsideLayer[0].NapChannelsIndexTo = insideLayer[0].NapChannelsIndexTo = NapChannelsCount;
+
+	outsideLayer[0].KpChannelsIndexFrom = insideLayer[0].KpChannelsIndexFrom = NapChannelsCount;
+	outsideLayer[0].KpChannelsIndexTo = insideLayer[0].KpChannelsIndexTo = NapChannelsCount + KpChannelsCount;
+
+	Barrier& barrier = insideLayer[0];
+
+	// add Nap channels
+	for (unsigned i = 0; i < NapChannelsCount; ++i) {
+		float insideCoords[3];
+		float outsideCoords[3];
+
+		// draw x and angle
+		float x = getRandDouble(barrier.startCoords[0], barrier.stopCoords[0]);
+		float angle = getRandDouble(0.0, 2 * phy::pi);
+
+		insideCoords[0] = x;
+		insideCoords[1] = barrierRadius * sin(angle);
+		insideCoords[2] = barrierRadius * cos(angle);
+
+		glm::vec3 radiusVec = glm::normalize(glm::vec3(insideCoords[0] - x, insideCoords[1] - barrier.y0, insideCoords[2] - barrier.z0));
+		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * radiusVec;
+
+		outsideCoords[0] = insideCoords[0] + lipidBilayerLengthVec[0];
+		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
+		outsideCoords[2] = insideCoords[2] + lipidBilayerLengthVec[2];
+
+		channels.push_back(Channel(insideCoords, outsideCoords, channel::NAP, channel::VOLTAGE_GATED));
+	}
+	
+	// add Kp channels
+	for (unsigned i = NapChannelsCount; i < NapChannelsCount + KpChannelsCount; ++i) {
+		float insideCoords[3];
+		float outsideCoords[3];
+
+		// draw x and angle
+		float x = getRandDouble(barrier.startCoords[0], barrier.stopCoords[0]);
+		float angle = getRandDouble(0.0, 2 * phy::pi);
+
+		insideCoords[0] = x;
+		insideCoords[1] = barrierRadius * sin(angle);
+		insideCoords[2] = barrierRadius * cos(angle);
+
+		glm::vec3 radiusVec = glm::normalize(glm::vec3(insideCoords[0] - x, insideCoords[1] - barrier.y0, insideCoords[2] - barrier.z0));
+		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * radiusVec;
+
+		outsideCoords[0] = insideCoords[0] + lipidBilayerLengthVec[0];
+		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
+		outsideCoords[2] = insideCoords[2] + lipidBilayerLengthVec[2];
+
+		channels.push_back(Channel(insideCoords, outsideCoords, channel::KP, channel::VOLTAGE_GATED));
+	}
 }
 
-Neuron::Neuron(double _metricFactor, double _timeFactor) :
-	metricFactor(_metricFactor), timeFactor(_timeFactor)
+Neuron::Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity, double _KpChannelsDensity) :
+	metricFactor(_metricFactor), timeFactor(_timeFactor), NapChannelsDensity(_NapChannelsDensity), KpChannelsDensity(_KpChannelsDensity)
 {
 	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
 	setupPrograms();
@@ -48,7 +97,6 @@ Neuron::~Neuron()
 {
 	delete barriersRenderProgram;
 }
-
 
 void Neuron::render(shader::Uniforms uniforms)
 {
@@ -86,12 +134,25 @@ bool Neuron::checkCollision(Particle& nextParticleState, const Particle& oldPart
 			float collisionPoint[3];
 			barrier.getCollisionPoint(collisionPoint, newCoords, oldCoords);
 
+			// checking only channels with proper type
+			unsigned channelsIndexFrom, channelsIndexTo;
+			if (type == particle::NAP) {
+				channelsIndexFrom = barrier.NapChannelsIndexFrom;
+				channelsIndexTo = barrier.NapChannelsIndexTo;
+			}
+			else if (type == particle::KP) {
+				channelsIndexFrom = barrier.KpChannelsIndexFrom;
+				channelsIndexTo = barrier.KpChannelsIndexTo;
+			}
+			else
+				channelsIndexFrom = channelsIndexTo = 0;
+
 			// check if collide with channel from current barrier
-			for (unsigned i = barrier.channelsIndexFrom; i < barrier.channelsIndexTo; ++i) {
+			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
 				const Channel& currentChannel = channels[i];
 
 				// check if channel is open and if ion type is appropriate to channel type
-				if (currentChannel.state != channel::OPEN || currentChannel.type != type)
+				if (currentChannel.state != channel::OPEN)
 					continue;
 
 				// coordsOut because its >>> outside layer <<<
@@ -151,12 +212,25 @@ bool Neuron::checkCollision(Particle& nextParticleState, const Particle& oldPart
 			float collisionPoint[3];
 			barrier.getCollisionPoint(collisionPoint, newCoords, oldCoords);
 
+			// checking only channels with proper type
+			unsigned channelsIndexFrom, channelsIndexTo;
+			if (type == particle::NAP) {
+				channelsIndexFrom = barrier.NapChannelsIndexFrom;
+				channelsIndexTo = barrier.NapChannelsIndexTo;
+			}
+			else if (type == particle::KP) {
+				channelsIndexFrom = barrier.KpChannelsIndexFrom;
+				channelsIndexTo = barrier.KpChannelsIndexTo;
+			}
+			else
+				channelsIndexFrom = channelsIndexTo = 0;
+
 			// check if collide with channel from current barrier
-			for (unsigned i = barrier.channelsIndexFrom; i < barrier.channelsIndexTo; ++i) {
+			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
 				const Channel& currentChannel = channels[i];
 
 				// check if channel is open and if ion type is appropriate to channel type
-				if (currentChannel.state != channel::OPEN || currentChannel.type != type)
+				if (currentChannel.state != channel::OPEN)
 					continue;
 
 				// coordsOut because its >>> inside layer <<<

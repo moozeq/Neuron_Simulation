@@ -25,8 +25,8 @@ struct Config
 	std::string otherParticlesTexturePath;
 
 	// channels
-	size_t NapIonsChannelsNum;
-	size_t KpIonsChannelsNum;
+	double NapIonsChannelsDensity;
+	double KpIonsChannelsDensity;
 
 	std::string NapChannelTexturePath;
 	std::string KpChannelTexturePath;

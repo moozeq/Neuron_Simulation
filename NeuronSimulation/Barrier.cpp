@@ -87,7 +87,7 @@ bool Barrier::checkCollision(float newCoords[3], float oldCoords[3])
 
 bool Barrier::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3])
 {
-	// TODO
+	// TODO better point getting AS SOON AS POSSIBLE
 	point[0] = (newCoords[0] + oldCoords[0]) / 2;
 	point[1] = (newCoords[1] + oldCoords[1]) / 2;
 	point[2] = (newCoords[2] + oldCoords[2]) / 2;
@@ -96,9 +96,9 @@ bool Barrier::getCollisionPoint(float* point, float newCoords[3], float oldCoord
 
 void Barrier::render()
 {
-	glBindTexture(GL_TEXTURE_2D, circlesTexture);
+	/*glBindTexture(GL_TEXTURE_2D, circlesTexture);
 	glBindVertexArray(circleVAO);
-	glDrawElements(GL_TRIANGLES, circlesIndices.size() * 3, GL_UNSIGNED_INT, 0);
+	glDrawElements(GL_TRIANGLES, circlesIndices.size() * 3, GL_UNSIGNED_INT, 0);*/
 
 	glBindTexture(GL_TEXTURE_2D, bilayerTexture);
 	glBindVertexArray(layerVAO);

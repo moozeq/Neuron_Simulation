@@ -12,7 +12,7 @@ void Simulation::loadConfig(const Config& _config)
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
 	particlesBufferSize = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
-	channelsBufferSize = config.NapIonsChannelsNum + config.KpIonsChannelsNum;
+	channelsBufferSize = config.NapIonsChannelsDensity + config.KpIonsChannelsDensity;
 	bufferNum = 0;
 	ice = false;
 	rewind = false;
@@ -98,7 +98,7 @@ void Simulation::setupStructures()
 
 void Simulation::setupNeuronStructures()
 {
-	neuron = new Neuron(metricFactor, timeFactor);
+	neuron = new Neuron(metricFactor, timeFactor, config.NapIonsChannelsDensity, config.KpIonsChannelsDensity);
 }
 
 void Simulation::setupParticlesStructures()
@@ -325,7 +325,7 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		log(simulation->logfile, "[+] Time factor = " + timeFactor.str());
 
 		// after changing time factor needs to change movement speed
-		simulation->camera.movementSpeed *= 0.8f;
+		simulation->camera.movementSpeed *= 0.8333f;
 		log(simulation->logfile, "[-] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
 	}
 
@@ -337,7 +337,7 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		log(simulation->logfile, "[-] Time factor = " + timeFactor.str());
 
 		// after changing time factor needs to change movement speed
-		simulation->camera.movementSpeed *= 1.2f;
+		simulation->camera.movementSpeed *= 1.25f;
 		log(simulation->logfile, "[+] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
 	}
 
@@ -461,9 +461,7 @@ inline void Simulation::updateChannelsStates()
 		// TODO add relative refraction 
 		// TODO refactor, delete logs
 
-		std::ostringstream streamObj;
-		switch (currChannel.state) {
-		case channel::CLOSED:
+		if (currChannel.state == channel::CLOSED) {
 			if (U > phy::NapOpenTreshold) {
 
 				//log(logfile, "[C] Channel opened, U = " + std::to_string(U));
@@ -472,13 +470,12 @@ inline void Simulation::updateChannelsStates()
 				currChannel.timeLeft = phy::NapOpenTime;
 				channelsAttribs[i * 4 + 3] = 1.0f;
 			}
-			break;
-		case channel::OPEN:
-			
+		}
+		else if (currChannel.state == channel::OPEN) {
 			currChannel.timeLeft -= deltaTime;
 
 			//log(logfile, "[O] Channel open, U = " + std::to_string(U));
-			streamObj << currChannel.timeLeft;
+			//streamObj << currChannel.timeLeft;
 			//log(logfile, "[O] Channel open, time left = " + streamObj.str());
 
 			if (currChannel.timeLeft < 0.0f) {
@@ -489,14 +486,14 @@ inline void Simulation::updateChannelsStates()
 				currChannel.timeLeft = phy::NapInactiveTime;
 				channelsAttribs[i * 4 + 3] = 0.5f;
 			}
-			break;
-		case channel::INACTIVE:
+		}
+		else if (currChannel.state == channel::INACTIVE) {
 			currChannel.timeLeft -= deltaTime;
 
 			//log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
-			streamObj << currChannel.timeLeft;
+			//streamObj << currChannel.timeLeft;
 			//log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
-				
+
 			if (currChannel.timeLeft < 0.0f) {
 
 				//log(logfile, "[C] Channel closed, U = " + std::to_string(U));
@@ -504,7 +501,6 @@ inline void Simulation::updateChannelsStates()
 				currChannel.state = channel::CLOSED;
 				channelsAttribs[i * 4 + 3] = 0.0f;
 			}
-			break;
 		}
 	}
 }
@@ -637,16 +633,16 @@ inline void Simulation::render()
 
 	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture);
 	glBindVertexArray(NapIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsNum);
-	channelsOffset += config.NapIonsChannelsNum;
+	glDrawArrays(GL_POINTS, channelsOffset, config.NapIonsChannelsDensity);
+	channelsOffset += config.NapIonsChannelsDensity;
 
 	uniforms.channelRadius = channelRadius[channel::KP];
 	channelsRenderProgram->setUniforms(uniforms);
 
 	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture);
 	glBindVertexArray(KpIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsNum);
-	channelsOffset += config.KpIonsChannelsNum;
+	glDrawArrays(GL_POINTS, channelsOffset, config.KpIonsChannelsDensity);
+	channelsOffset += config.KpIonsChannelsDensity;
 
 	// render ions
 	size_t ionsOffset = 0;

@@ -7,8 +7,10 @@ class Barrier
 	friend class Simulation;
 	friend class Neuron;
 
-	unsigned channelsIndexFrom;
-	unsigned channelsIndexTo;
+	unsigned NapChannelsIndexFrom;
+	unsigned NapChannelsIndexTo;
+	unsigned KpChannelsIndexFrom;
+	unsigned KpChannelsIndexTo;
 
 	unsigned slices;
 	float radius;
