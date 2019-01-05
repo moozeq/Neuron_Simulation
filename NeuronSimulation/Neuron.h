@@ -9,8 +9,7 @@ class Neuron
 	ShaderProgram* barriersRenderProgram;
 
 	std::vector<Channel> channels;
-	std::vector<Barrier> insideLayer;
-	std::vector<Barrier> outsideLayer;
+	std::vector<Barrier> barriers;
 	GLuint channelsPosBuf;
 
 	double lipidBilayerWidth;
@@ -33,5 +32,5 @@ public:
 	~Neuron();
 	void render(shader::Uniforms uniforms);
 	std::vector<float> getChannels();
-	bool checkCollision(Particle& nextParticleState, const Particle& oldParticleState, const particle::Type type);
+	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type);
 };

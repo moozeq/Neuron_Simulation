@@ -37,25 +37,29 @@ namespace phy {
 	constexpr double u1 = 1.6605389274e-27;
 	constexpr double pi = 3.14159265359;
 
-	constexpr double lipidBilayerWidth = 60 * A;
-	constexpr double NapOpenTreshold = -40e-3;
-	constexpr double NapOpenTime = 1e-3;
-	constexpr double NapInactiveTime = 1e-3;
-	
 	// CHANGEME temp  scale
-	constexpr double tempscale = 100;
+	constexpr double tempIonScale = 100;
+	constexpr double tempChannelTimeScale = 1e-4;
 
-	constexpr double NapR = 1.16 * A * tempscale;
+	constexpr double lipidBilayerWidth = 60 * A;
+
+	constexpr double NapOpenTreshold = -40e-3;
+	constexpr double NapOpenTime = 1e-3 * tempChannelTimeScale;
+	constexpr double NapInactiveTime = 1e-3 * tempChannelTimeScale;
+
+	constexpr double KpOpenTreshold = 100e-3;
+
+	constexpr double NapR = 1.16 * A * tempIonScale;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
 	constexpr double NapA = k * NapC / NapM;
 
-	constexpr double KpR = 1.52 * A * tempscale;
+	constexpr double KpR = 1.52 * A * tempIonScale;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 	constexpr double KpA = k * KpC / KpM;
 
-	constexpr double ClmR = 1.67 * A * tempscale;
+	constexpr double ClmR = 1.67 * A * tempIonScale;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;

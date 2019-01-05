@@ -2,6 +2,12 @@
 #include "Utilities.h"
 #include "Channel.h"
 
+namespace collision {
+	enum Type {
+		NONE, INSIDE, OUTSIDE
+	};
+}
+
 class Barrier
 {
 	friend class Simulation;
@@ -15,6 +21,7 @@ class Barrier
 	unsigned slices;
 	float radius;
 	float length;
+	float lipidBilayerWidth;
 
 	float x0;
 	float y0;
@@ -23,25 +30,24 @@ class Barrier
 	float startCoords[3];
 	float stopCoords[3];
 	
-	GLuint circleVAO;
-	GLuint layerVAO;
-
-	GLuint circlesTexture;
+	GLuint innerLayerVAO;
+	GLuint outerLayerVAO;
 	GLuint bilayerTexture;
 
-	std::vector<FCoord8> circlesVertices;
-	std::vector<FCoord8> bilayerVertices;
-	std::vector<UCoord3> circlesIndices;
-	std::vector<UCoord3> bilayerIndices;
+	std::vector<FCoord8> innerLayerVertices;
+	std::vector<UCoord3> innerLayerIndices;
 
-	GLuint generateCircles();
-	GLuint generateBilayer();
-	void addCircle();
+	std::vector<FCoord8> outerLayerVertices;
+	std::vector<UCoord3> outerLayerIndices;
+
+	GLuint generateBilayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices);
+	void addCircle(std::vector<FCoord8>& vertices);
 
 public:
-	Barrier(float coords[3], float _radius, float _length);
-	bool checkCollision(float newCoords[3], float oldCoords[3]);
-	bool getCollisionPoint(float* point, float newCoords[3], float oldCoords[3]);
+	Barrier(float coords[3], float _radius, float _length, float _lipidBilayerWidth);
+	collision::Type checkCollision(float newCoords[3], float oldCoords[3]);
+	bool getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType);
+	glm::vec3 getCollisionNormalVec(float collisionPoint[3], collision::Type collisionType);
 	void render();
 };
 

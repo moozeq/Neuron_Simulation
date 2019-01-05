@@ -467,44 +467,57 @@ inline void Simulation::updateChannelsStates()
 		// TODO probability to open instead of threshold
 		// TODO add relative refraction 
 		// TODO refactor, delete logs
+		// TODO channels open/close/inactive when deltaTime < 0
 
-		if (currChannel.state == channel::CLOSED) {
-			if (U > phy::NapOpenTreshold) {
+		if (currChannel.type == channel::NAP) {
+			if (currChannel.state == channel::CLOSED) {
+				if (U > phy::NapOpenTreshold) {
 
-				//log(logfile, "[C] Channel opened, U = " + std::to_string(U));
+					//log(logfile, "[C] Channel opened, U = " + std::to_string(U));
 
+					currChannel.state = channel::OPEN;
+					currChannel.timeLeft = phy::NapOpenTime;
+					channelsAttribs[i * 4 + 3] = 1.0f;
+				}
+			}
+			else if (currChannel.state == channel::OPEN) {
+				currChannel.timeLeft -= deltaTime;
+
+				//log(logfile, "[O] Channel open, U = " + std::to_string(U));
+				//streamObj << currChannel.timeLeft;
+				//log(logfile, "[O] Channel open, time left = " + streamObj.str());
+
+				if (currChannel.timeLeft < 0.0f) {
+
+					//log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
+
+					currChannel.state = channel::INACTIVE;
+					currChannel.timeLeft = phy::NapInactiveTime;
+					channelsAttribs[i * 4 + 3] = 0.5f;
+				}
+			}
+			else if (currChannel.state == channel::INACTIVE) {
+				currChannel.timeLeft -= deltaTime;
+
+				//log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
+				//streamObj << currChannel.timeLeft;
+				//log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
+
+				if (currChannel.timeLeft < 0.0f) {
+
+					//log(logfile, "[C] Channel closed, U = " + std::to_string(U));
+
+					currChannel.state = channel::CLOSED;
+					channelsAttribs[i * 4 + 3] = 0.0f;
+				}
+			}
+		}
+		else if (currChannel.type == channel::KP) {
+			if (U > phy::KpOpenTreshold) {
 				currChannel.state = channel::OPEN;
-				currChannel.timeLeft = phy::NapOpenTime;
 				channelsAttribs[i * 4 + 3] = 1.0f;
 			}
-		}
-		else if (currChannel.state == channel::OPEN) {
-			currChannel.timeLeft -= deltaTime;
-
-			//log(logfile, "[O] Channel open, U = " + std::to_string(U));
-			//streamObj << currChannel.timeLeft;
-			//log(logfile, "[O] Channel open, time left = " + streamObj.str());
-
-			if (currChannel.timeLeft < 0.0f) {
-
-				//log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
-
-				currChannel.state = channel::INACTIVE;
-				currChannel.timeLeft = phy::NapInactiveTime;
-				channelsAttribs[i * 4 + 3] = 0.5f;
-			}
-		}
-		else if (currChannel.state == channel::INACTIVE) {
-			currChannel.timeLeft -= deltaTime;
-
-			//log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
-			//streamObj << currChannel.timeLeft;
-			//log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
-
-			if (currChannel.timeLeft < 0.0f) {
-
-				//log(logfile, "[C] Channel closed, U = " + std::to_string(U));
-
+			else {
 				currChannel.state = channel::CLOSED;
 				channelsAttribs[i * 4 + 3] = 0.0f;
 			}
