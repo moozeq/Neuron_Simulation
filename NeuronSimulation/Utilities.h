@@ -173,7 +173,7 @@ static Particle* newParticle(double boundaries, particle::Type type) {
 	particle->vx = 0.0;
 	particle->vy = 0.0;
 	particle->vz = 0.0;
-	particle->x = getRandDouble(-boundaries, boundaries);
+	particle->x = getRandDouble(-boundaries, boundaries) - 3.0f;
 	particle->y = getRandDouble(-boundaries, boundaries);
 	particle->z = getRandDouble(-boundaries, boundaries);
 

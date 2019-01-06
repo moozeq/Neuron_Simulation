@@ -1,6 +1,6 @@
 #include "Axon.h"
 
-GLuint Axon::generateBilayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices)
+GLuint Axon::generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices)
 {
 	GLuint offset = slices + 2; // 2 midpoints
 	for (GLuint i = 1; i < slices; ++i) {
@@ -58,13 +58,13 @@ Axon::Axon(float coords[3], float _radius, float _length, float _lipidBilayerWid
 
 	addCircle(innerLayerVertices);
 	addCircle(innerLayerVertices);
-	innerLayerVAO = generateBilayer(innerLayerVertices, innerLayerIndices);
+	innerLayerVAO = generateLayer(innerLayerVertices, innerLayerIndices);
 
 	radius += lipidBilayerWidth;
 
 	addCircle(outerLayerVertices);
 	addCircle(outerLayerVertices);
-	outerLayerVAO = generateBilayer(outerLayerVertices, outerLayerIndices);
+	outerLayerVAO = generateLayer(outerLayerVertices, outerLayerIndices);
 
 	radius -= lipidBilayerWidth / 2;
 }
@@ -119,12 +119,15 @@ bool Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3
 
 bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const
 {
-	float center[3] = { x0, y0, z0 };
-	float h = getPointOnLineDistanceFromCenter(collisionPoint, center, radius);
+	float midPoint[3] = { x0, y0, z0 };
+	float h = getPointOnLineDistanceFromCenter(collisionPoint, midPoint, radius);
 	if (collisionPoint[0] <= x0)
 		n = glm::normalize(glm::vec3(x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
 	else
 		n = glm::normalize(glm::vec3(x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
+	
+	if (collisionType == collision::OUTSIDE)
+		n *= -1.0f;
 	return true;
 }
 

@@ -13,7 +13,7 @@ class Axon :
 	float startCoords[3];
 	float stopCoords[3];
 
-	GLuint generateBilayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices);
+	GLuint generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices);
 	void addCircle(std::vector<FCoord8>& vertices);
 
 public:
@@ -23,4 +23,3 @@ public:
 	bool getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const;
 	bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const;
 };
-

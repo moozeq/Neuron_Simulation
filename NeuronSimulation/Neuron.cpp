@@ -1,11 +1,23 @@
 #include "Neuron.h"
 
-float Neuron::addBarrier(float x, float y, float z, float radius, float length)
+float Neuron::addBarrier(float x, float y, float z, float radius, float length, barrier::Type barrierType)
 {
-	float coords[3] = { x, y, z };
-	float area = 2 * phy::pi * radius * length;
+	float midPoint[3] = { x, y, z };
+	float area;
 
-	barriers.push_back(new Axon(coords, radius, length, lipidBilayerWidth));
+	switch (barrierType) {
+	case barrier::SOMA:
+		area = 4 * phy::pi * radius * radius;
+		barriers.push_back(new Soma(midPoint, radius, lipidBilayerWidth));
+		break;
+	case barrier::AXON:
+		area = 2 * phy::pi * radius * length;
+		barriers.push_back(new Axon(midPoint, radius, length, lipidBilayerWidth));
+		break;
+	case barrier::DENDRITE:
+		area = 2 * phy::pi * radius * length;
+		break;
+	}
 
 	// returns area in metric factor squared
 	return area;
@@ -19,26 +31,15 @@ void Neuron::setupPrograms() {
 	barriersRenderProgram = new ShaderProgram(shader::VF, barriersPaths);
 }
 
-void Neuron::setupStructures()
+void Neuron::setupChannels(unsigned barrierIndex)
 {
-	float barrierRadius = 0.125f;
-	float barrierLength = 5.0f;
+	if (barrierIndex >= barriers.size())
+		return;
 
-	// barrier real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
-	float area = addBarrier(0.0f, 0.0f, 0.0f, barrierRadius, barrierLength);
-	NapChannelsCount = area * NapChannelsDensity;
-	KpChannelsCount = area * KpChannelsDensity;
+	Barrier* barrier = barriers[barrierIndex];
 
-	barriers[0]->NapChannelsIndexFrom = 0;
-	barriers[0]->NapChannelsIndexTo = NapChannelsCount;
-
-	barriers[0]->KpChannelsIndexFrom = NapChannelsCount;
-	barriers[0]->KpChannelsIndexTo = NapChannelsCount + KpChannelsCount;
-
-	const Barrier* barrier = barriers[0];
-	
-	// add channels
-	for (unsigned i = 0; i < NapChannelsCount + KpChannelsCount; ++i) {
+	// add Nap channels
+	for (unsigned i = barrier->NapChannelsIndexFrom; i < barrier->NapChannelsIndexTo; ++i) {
 		float insideCoords[3];
 		float outsideCoords[3];
 
@@ -51,15 +52,76 @@ void Neuron::setupStructures()
 		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
 		outsideCoords[2] = insideCoords[2] + lipidBilayerLengthVec[2];
 
-		if (i < NapChannelsCount)
-			channels.push_back(Channel(insideCoords, outsideCoords, channel::NAP, channel::VOLTAGE_GATED));
-		else
-			channels.push_back(Channel(insideCoords, outsideCoords, channel::KP, channel::VOLTAGE_GATED));
+		channels[i] = Channel(insideCoords, outsideCoords, channel::NAP, channel::VOLTAGE_GATED);
+	}
+
+	// add Kp channels
+	for (unsigned i = barrier->KpChannelsIndexFrom; i < barrier->KpChannelsIndexTo; ++i) {
+		float insideCoords[3];
+		float outsideCoords[3];
+
+		glm::vec3 inOutVec;
+
+		barrier->getRandPointOnInnerLayer(insideCoords, inOutVec);
+		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * inOutVec;
+
+		outsideCoords[0] = insideCoords[0] + lipidBilayerLengthVec[0];
+		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
+		outsideCoords[2] = insideCoords[2] + lipidBilayerLengthVec[2];
+
+		channels[i] = Channel(insideCoords, outsideCoords, channel::KP, channel::VOLTAGE_GATED);
 	}
 }
 
+void Neuron::setupStructures()
+{
+	float somaRadius = 0.5f;
+	float somaArea;
+	unsigned somaNapChannelsCount = 0;
+	unsigned somaKpChannelsCount = 0;
+
+	// axon real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
+	float axonRadius = 0.125f;
+	float axonLength = 5.0f;
+	float axonArea;
+	unsigned axonNapChannelsCount = 0;
+	unsigned axonKpChannelsCount = 0;
+
+	somaArea = addBarrier(-axonLength / 2.0f - somaRadius, 0.0f, 0.0f, somaRadius, 0.0f, barrier::SOMA);
+	axonArea = addBarrier(0.0f, 0.0f, 0.0f, axonRadius, axonLength, barrier::AXON);
+	
+	somaNapChannelsCount = somaArea * NapChannelsDensity;
+	somaKpChannelsCount = somaArea * KpChannelsDensity;
+
+	axonNapChannelsCount = axonArea * NapChannelsDensity;
+	axonKpChannelsCount = axonArea * KpChannelsDensity;
+
+	NapChannelsCount = somaNapChannelsCount + axonNapChannelsCount;
+	KpChannelsCount = somaKpChannelsCount + axonKpChannelsCount;
+
+	barriers[0]->NapChannelsIndexFrom = 0;
+	barriers[0]->NapChannelsIndexTo = somaNapChannelsCount;
+
+	barriers[0]->KpChannelsIndexFrom = NapChannelsCount;
+	barriers[0]->KpChannelsIndexTo = NapChannelsCount + somaKpChannelsCount;
+
+
+	barriers[1]->NapChannelsIndexFrom = somaNapChannelsCount;
+	barriers[1]->NapChannelsIndexTo = somaNapChannelsCount + axonNapChannelsCount;
+
+	barriers[1]->KpChannelsIndexFrom = NapChannelsCount + somaKpChannelsCount;
+	barriers[1]->KpChannelsIndexTo = NapChannelsCount + somaKpChannelsCount + axonKpChannelsCount;
+	
+	channels.resize(NapChannelsCount + KpChannelsCount);
+
+	for (unsigned i = 0; i < barriers.size(); ++i)
+		setupChannels(i);
+}
+
 Neuron::Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity, double _KpChannelsDensity) :
-	metricFactor(_metricFactor), timeFactor(_timeFactor), NapChannelsDensity(_NapChannelsDensity), KpChannelsDensity(_KpChannelsDensity)
+	metricFactor(_metricFactor), timeFactor(_timeFactor),
+	NapChannelsDensity(_NapChannelsDensity), KpChannelsDensity(_KpChannelsDensity),
+	NapChannelsCount(0), KpChannelsCount(0)
 {
 	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
 	setupPrograms();
@@ -69,6 +131,8 @@ Neuron::Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDens
 Neuron::~Neuron()
 {
 	delete barriersRenderProgram;
+	for (Barrier* barrier : barriers)
+		delete barrier;
 }
 
 void Neuron::render(shader::Uniforms uniforms) const

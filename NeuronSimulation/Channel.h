@@ -37,6 +37,7 @@ class Channel
 	float zOut;
 
 public:
+	Channel();
 	Channel(float coordsIn[3], float coordsOut[3], channel::Type type, channel::Gating _gating);
 };
 

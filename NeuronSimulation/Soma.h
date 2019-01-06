@@ -10,7 +10,7 @@ class Soma :
 	float length;
 	float lipidBilayerWidth;
 
-	//GLuint generateBilayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices);
+	GLuint generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices);
 
 public:
 	Soma(float coords[3], float _radius, float _lipidBilayerWidth);

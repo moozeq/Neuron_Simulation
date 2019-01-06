@@ -1,5 +1,9 @@
 #include "Channel.h"
 
+Channel::Channel()
+{
+}
+
 Channel::Channel(float coordsIn[3], float coordsOut[3], channel::Type _type, channel::Gating _gating) :
 	xIn(coordsIn[0]), yIn(coordsIn[1]), zIn(coordsIn[2]),
 	xOut(coordsOut[0]), yOut(coordsOut[1]), zOut(coordsOut[2]),

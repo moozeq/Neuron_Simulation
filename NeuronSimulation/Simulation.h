@@ -109,8 +109,9 @@ class Simulation
 	bool updateFramebufferSize(int width, int height);
 
 	inline void updateChannelsStates();
+	inline void calculateParticlesPositions();
+	inline void calculateCollisions();
 	inline void updateParticlesPositions();
-	inline void updateCollisions();
 	inline void update();
 	inline void render();
 

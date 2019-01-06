@@ -24,9 +24,10 @@ class Neuron
 	unsigned NapChannelsCount;
 	unsigned KpChannelsCount;
 
-	float addBarrier(float x, float y, float z, float radius, float length);
+	float addBarrier(float x, float y, float z, float radius, float length, barrier::Type barrierType);
 
 	void setupPrograms();
+	void setupChannels(unsigned barrierIndex);
 	void setupStructures();
 
 public:

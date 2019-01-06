@@ -525,7 +525,7 @@ inline void Simulation::updateChannelsStates()
 	}
 }
 
-inline void Simulation::updateParticlesPositions()
+inline void Simulation::calculateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
 	const long particlesBufferSizeInLoop = particlesBufferSize;
@@ -607,12 +607,11 @@ inline void Simulation::updateParticlesPositions()
 	}
 }
 
-inline void Simulation::updateCollisions()
+inline void Simulation::calculateCollisions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
 	const long particlesBufferSizeInLoop = particlesBufferSize;
 
-	// parallelization can be done due to double buffering particles vector
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
 	for (long i = 0; i < particlesBufferSizeInLoop; ++i) {
@@ -626,6 +625,19 @@ inline void Simulation::updateCollisions()
 			neuron->checkCollision(currParticle, prevParticle, particle::KP);
 		else
 			neuron->checkCollision(currParticle, prevParticle, particle::NONE);
+	}
+}
+
+inline void Simulation::updateParticlesPositions()
+{
+	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
+	const long particlesBufferSizeInLoop = particlesBufferSize;
+
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = 0; i < particlesBufferSizeInLoop; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
+		Particle& prevParticle = particles[nextBufferNum][i];
 
 		// update positions, all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
 		particlesPos[i * 3 + 0] = currParticle.x;
@@ -642,11 +654,14 @@ inline void Simulation::update()
 	// update channles states
 	updateChannelsStates();
 
-	// update particles in current vector and positions buffer
-	updateParticlesPositions();
+	// calculate particles positions based on eletric forces
+	calculateParticlesPositions();
 
-	// update particles after collisions
-	updateCollisions();
+	// calculate particles positions when collide
+	calculateCollisions();
+
+	// update particles positions buffer with their calculated positions
+	updateParticlesPositions();
 
 	// swap to next particles vector
 	++bufferNum %= 2;

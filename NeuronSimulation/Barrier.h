@@ -7,6 +7,12 @@ namespace collision {
 	};
 }
 
+namespace barrier {
+	enum Type {
+		SOMA, AXON, DENDRITE
+	};
+}
+
 class Barrier
 {
 	friend class Simulation;
