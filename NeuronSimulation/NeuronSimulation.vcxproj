@@ -136,13 +136,16 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Axon.cpp" />
     <ClCompile Include="Barrier.cpp" />
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Neuron.cpp" />
     <ClCompile Include="Simulation.cpp" />
+    <ClCompile Include="Soma.cpp" />
     <ClCompile Include="Source.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Axon.h" />
     <ClInclude Include="Barrier.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Channel.h" />
@@ -151,6 +154,7 @@
     <ClInclude Include="Particle.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Simulation.h" />
+    <ClInclude Include="Soma.h" />
     <ClInclude Include="STBImage.h" />
     <ClInclude Include="Utilities.h" />
   </ItemGroup>

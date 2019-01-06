@@ -1,6 +1,5 @@
 #pragma once
 #include "Utilities.h"
-#include "Channel.h"
 
 namespace collision {
 	enum Type {
@@ -13,23 +12,18 @@ class Barrier
 	friend class Simulation;
 	friend class Neuron;
 
+protected:
+	Barrier();
+
 	unsigned NapChannelsIndexFrom;
 	unsigned NapChannelsIndexTo;
 	unsigned KpChannelsIndexFrom;
 	unsigned KpChannelsIndexTo;
 
-	unsigned slices;
-	float radius;
-	float length;
-	float lipidBilayerWidth;
-
 	float x0;
 	float y0;
 	float z0;
 
-	float startCoords[3];
-	float stopCoords[3];
-	
 	GLuint innerLayerVAO;
 	GLuint outerLayerVAO;
 	GLuint bilayerTexture;
@@ -40,14 +34,11 @@ class Barrier
 	std::vector<FCoord8> outerLayerVertices;
 	std::vector<UCoord3> outerLayerIndices;
 
-	GLuint generateBilayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices);
-	void addCircle(std::vector<FCoord8>& vertices);
-
 public:
-	Barrier(float coords[3], float _radius, float _length, float _lipidBilayerWidth);
-	collision::Type checkCollision(float newCoords[3], float oldCoords[3]);
-	bool getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType);
-	glm::vec3 getCollisionNormalVec(float collisionPoint[3], collision::Type collisionType);
-	void render();
+	virtual collision::Type checkCollision(const float newCoords[3], const float oldCoords[3]) const = 0;
+	virtual bool getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const = 0;
+	virtual bool getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const = 0;
+	virtual bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const = 0;
+	void render() const;
 };
 

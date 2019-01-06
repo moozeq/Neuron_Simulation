@@ -37,9 +37,10 @@ namespace phy {
 	constexpr double u1 = 1.6605389274e-27;
 	constexpr double pi = 3.14159265359;
 
-	// CHANGEME temp  scale
+	// >>>>>> CHANGEME <<<<<<
 	constexpr double tempIonScale = 100;
 	constexpr double tempChannelTimeScale = 1e-4;
+	// >>>>>> END CHANGEME <<<<<<
 
 	constexpr double lipidBilayerWidth = 60 * A;
 
@@ -47,6 +48,7 @@ namespace phy {
 	constexpr double NapOpenTime = 1e-3 * tempChannelTimeScale;
 	constexpr double NapInactiveTime = 1e-3 * tempChannelTimeScale;
 
+	// CHANGEME set proper Kp channel open treshold
 	constexpr double KpOpenTreshold = 100e-3;
 
 	constexpr double NapR = 1.16 * A * tempIonScale;
@@ -85,7 +87,7 @@ static inline double getRandDouble(double min, double max) {
 	return ((max - min) * ((double)rand() / (double)RAND_MAX) + min);
 }
 
-static inline float getPointLineDistance(float point[3], float startPoint[3], float stopPoint[3]) {
+static inline float getPointLineDistance(const float point[3], const float startPoint[3], const float stopPoint[3]) {
 	glm::vec3 X0X1 = glm::vec3(point[0] - startPoint[0], point[1] - startPoint[1], point[2] - startPoint[2]);
 	glm::vec3 X0X2 = glm::vec3(point[0] - stopPoint[0], point[1] - stopPoint[1], point[2] - stopPoint[2]);
 	glm::vec3 X2X1 = glm::vec3(stopPoint[0] - startPoint[0], stopPoint[1] - startPoint[1], stopPoint[2] - startPoint[2]);

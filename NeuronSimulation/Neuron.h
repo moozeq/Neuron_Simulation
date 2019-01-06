@@ -1,6 +1,8 @@
 #pragma once
 #include "Utilities.h"
 #include "Barrier.h"
+#include "Axon.h"
+#include "Soma.h"
 
 class Neuron
 {
@@ -9,7 +11,7 @@ class Neuron
 	ShaderProgram* barriersRenderProgram;
 
 	std::vector<Channel> channels;
-	std::vector<Barrier> barriers;
+	std::vector<Barrier*> barriers;
 	GLuint channelsPosBuf;
 
 	double lipidBilayerWidth;
@@ -30,7 +32,7 @@ class Neuron
 public:
 	Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity, double _KpChannelsDensity);
 	~Neuron();
-	void render(shader::Uniforms uniforms);
+	void render(shader::Uniforms uniforms) const;
 	std::vector<float> getChannels();
-	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type);
+	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const;
 };

@@ -5,7 +5,7 @@ float Neuron::addBarrier(float x, float y, float z, float radius, float length)
 	float coords[3] = { x, y, z };
 	float area = 2 * phy::pi * radius * length;
 
-	barriers.push_back(Barrier(coords, radius, length, lipidBilayerWidth));
+	barriers.push_back(new Axon(coords, radius, length, lipidBilayerWidth));
 
 	// returns area in metric factor squared
 	return area;
@@ -29,29 +29,23 @@ void Neuron::setupStructures()
 	NapChannelsCount = area * NapChannelsDensity;
 	KpChannelsCount = area * KpChannelsDensity;
 
-	barriers[0].NapChannelsIndexFrom = 0;
-	barriers[0].NapChannelsIndexTo = NapChannelsCount;
+	barriers[0]->NapChannelsIndexFrom = 0;
+	barriers[0]->NapChannelsIndexTo = NapChannelsCount;
 
-	barriers[0].KpChannelsIndexFrom = NapChannelsCount;
-	barriers[0].KpChannelsIndexTo = NapChannelsCount + KpChannelsCount;
+	barriers[0]->KpChannelsIndexFrom = NapChannelsCount;
+	barriers[0]->KpChannelsIndexTo = NapChannelsCount + KpChannelsCount;
 
-	Barrier& barrier = barriers[0];
+	const Barrier* barrier = barriers[0];
 	
 	// add channels
 	for (unsigned i = 0; i < NapChannelsCount + KpChannelsCount; ++i) {
 		float insideCoords[3];
 		float outsideCoords[3];
 
-		// draw x and angle
-		float x = getRandDouble(barrier.startCoords[0], barrier.stopCoords[0]);
-		float angle = getRandDouble(0.0, 2 * phy::pi);
+		glm::vec3 inOutVec;
 
-		insideCoords[0] = x;
-		insideCoords[1] = (barrierRadius - lipidBilayerWidth / 2) * sin(angle);
-		insideCoords[2] = (barrierRadius - lipidBilayerWidth / 2) * cos(angle);
-
-		glm::vec3 radiusVec = glm::normalize(glm::vec3(insideCoords[0] - x, insideCoords[1] - barrier.y0, insideCoords[2] - barrier.z0));
-		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * radiusVec;
+		barrier->getRandPointOnInnerLayer(insideCoords, inOutVec);
+		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * inOutVec;
 
 		outsideCoords[0] = insideCoords[0] + lipidBilayerLengthVec[0];
 		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
@@ -77,13 +71,13 @@ Neuron::~Neuron()
 	delete barriersRenderProgram;
 }
 
-void Neuron::render(shader::Uniforms uniforms)
+void Neuron::render(shader::Uniforms uniforms) const
 {
 	barriersRenderProgram->use();
 	barriersRenderProgram->setUniforms(uniforms);
 
-	for (Barrier& barrier : barriers)
-		barrier.render();
+	for (const Barrier* barrier : barriers)
+		barrier->render();
 }
 
 std::vector<float> Neuron::getChannels()
@@ -99,30 +93,30 @@ std::vector<float> Neuron::getChannels()
 	return channelsAttribs;
 }
 
-bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type)
+bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const
 {
-	for (Barrier& barrier : barriers) {
+	for (const Barrier* barrier : barriers) {
 		float newCoords[3] = { nextParticleState.x, nextParticleState.y, nextParticleState.z };
 		float oldCoords[3] = { oldParticleState.x, oldParticleState.y, oldParticleState.z };
 
 		// barriers do not overlap, detect if collide with current barrier
-		collision::Type collisionType = barrier.checkCollision(newCoords, oldCoords);
+		collision::Type collisionType = barrier->checkCollision(newCoords, oldCoords);
 
 		if (collisionType) {
 			float collisionPoint[3];
-			bool collisionStrike = barrier.getCollisionPoint(collisionPoint, newCoords, oldCoords, collisionType);
+			bool collisionStrike = barrier->getCollisionPoint(collisionPoint, newCoords, oldCoords, collisionType);
 			if (!collisionStrike)
 				return false;
 
 			// checking only channels with proper type
 			unsigned channelsIndexFrom, channelsIndexTo;
 			if (type == particle::NAP) {
-				channelsIndexFrom = barrier.NapChannelsIndexFrom;
-				channelsIndexTo = barrier.NapChannelsIndexTo;
+				channelsIndexFrom = barrier->NapChannelsIndexFrom;
+				channelsIndexTo = barrier->NapChannelsIndexTo;
 			}
 			else if (type == particle::KP) {
-				channelsIndexFrom = barrier.KpChannelsIndexFrom;
-				channelsIndexTo = barrier.KpChannelsIndexTo;
+				channelsIndexFrom = barrier->KpChannelsIndexFrom;
+				channelsIndexTo = barrier->KpChannelsIndexTo;
 			}
 			else
 				channelsIndexFrom = channelsIndexTo = 0;
@@ -184,7 +178,8 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 			}
 
 			// TODO collide with barrier change coords and velocity
-			glm::vec3 n = barrier.getCollisionNormalVec(collisionPoint, collisionType);
+			glm::vec3 n;
+			barrier->getCollisionNormalVec(collisionPoint, n, collisionType);
 			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
 			nextParticleState.x = collisionPoint[0];
 			nextParticleState.y = collisionPoint[1];

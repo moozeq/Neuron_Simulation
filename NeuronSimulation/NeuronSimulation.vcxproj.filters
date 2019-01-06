@@ -22,6 +22,9 @@
     <Filter Include="Neuron">
       <UniqueIdentifier>{c67f628f-fa30-40c9-bdd7-31d7d34ad1c4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Neuron\Barriers">
+      <UniqueIdentifier>{7a00f056-d761-48b6-800e-e9ec17ca3af4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Source.cpp">
@@ -36,8 +39,14 @@
     <ClCompile Include="Channel.cpp">
       <Filter>Neuron</Filter>
     </ClCompile>
+    <ClCompile Include="Axon.cpp">
+      <Filter>Neuron\Barriers</Filter>
+    </ClCompile>
     <ClCompile Include="Barrier.cpp">
-      <Filter>Neuron</Filter>
+      <Filter>Neuron\Barriers</Filter>
+    </ClCompile>
+    <ClCompile Include="Soma.cpp">
+      <Filter>Neuron\Barriers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -48,9 +57,6 @@
       <Filter>Utilities</Filter>
     </ClInclude>
     <ClInclude Include="Neuron.h">
-      <Filter>Neuron</Filter>
-    </ClInclude>
-    <ClInclude Include="Barrier.h">
       <Filter>Neuron</Filter>
     </ClInclude>
     <ClInclude Include="Channel.h">
@@ -70,6 +76,15 @@
     </ClInclude>
     <ClInclude Include="Simulation.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Axon.h">
+      <Filter>Neuron\Barriers</Filter>
+    </ClInclude>
+    <ClInclude Include="Barrier.h">
+      <Filter>Neuron\Barriers</Filter>
+    </ClInclude>
+    <ClInclude Include="Soma.h">
+      <Filter>Neuron\Barriers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -477,11 +477,11 @@ inline void Simulation::updateChannelsStates()
 
 					currChannel.state = channel::OPEN;
 					currChannel.timeLeft = phy::NapOpenTime;
-					channelsAttribs[i * 4 + 3] = 1.0f;
+					channelsAttribs[i * 4 + 3] = 0.0f;
 				}
 			}
 			else if (currChannel.state == channel::OPEN) {
-				currChannel.timeLeft -= deltaTime;
+				currChannel.timeLeft -= fabs(deltaTime);
 
 				//log(logfile, "[O] Channel open, U = " + std::to_string(U));
 				//streamObj << currChannel.timeLeft;
@@ -497,7 +497,7 @@ inline void Simulation::updateChannelsStates()
 				}
 			}
 			else if (currChannel.state == channel::INACTIVE) {
-				currChannel.timeLeft -= deltaTime;
+				currChannel.timeLeft -= fabs(deltaTime);
 
 				//log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
 				//streamObj << currChannel.timeLeft;
@@ -508,18 +508,18 @@ inline void Simulation::updateChannelsStates()
 					//log(logfile, "[C] Channel closed, U = " + std::to_string(U));
 
 					currChannel.state = channel::CLOSED;
-					channelsAttribs[i * 4 + 3] = 0.0f;
+					channelsAttribs[i * 4 + 3] = 1.0f;
 				}
 			}
 		}
 		else if (currChannel.type == channel::KP) {
 			if (U > phy::KpOpenTreshold) {
 				currChannel.state = channel::OPEN;
-				channelsAttribs[i * 4 + 3] = 1.0f;
+				channelsAttribs[i * 4 + 3] = 0.0f;
 			}
 			else {
 				currChannel.state = channel::CLOSED;
-				channelsAttribs[i * 4 + 3] = 0.0f;
+				channelsAttribs[i * 4 + 3] = 1.0f;
 			}
 		}
 	}
@@ -604,6 +604,20 @@ inline void Simulation::updateParticlesPositions()
 		currParticle.vx += axdt;
 		currParticle.vy += aydt;
 		currParticle.vz += azdt;
+	}
+}
+
+inline void Simulation::updateCollisions()
+{
+	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
+	const long particlesBufferSizeInLoop = particlesBufferSize;
+
+	// parallelization can be done due to double buffering particles vector
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = 0; i < particlesBufferSizeInLoop; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
+		Particle& prevParticle = particles[nextBufferNum][i];
 
 		// check if collide with lipid bilayer and if, then check if bounced or pass through channel
 		if (i >= 0 && i < config.NapIonsNum)
@@ -617,8 +631,6 @@ inline void Simulation::updateParticlesPositions()
 		particlesPos[i * 3 + 0] = currParticle.x;
 		particlesPos[i * 3 + 1] = currParticle.y;
 		particlesPos[i * 3 + 2] = currParticle.z;
-
-		//log(logfile, "Particle pos: i = " + std::to_string(i) + ", x = " + std::to_string(currParticle.x) + ", y = " + std::to_string(currParticle.y) + ", z = " + std::to_string(currParticle.z));
 	}
 }
 
@@ -632,6 +644,9 @@ inline void Simulation::update()
 
 	// update particles in current vector and positions buffer
 	updateParticlesPositions();
+
+	// update particles after collisions
+	updateCollisions();
 
 	// swap to next particles vector
 	++bufferNum %= 2;

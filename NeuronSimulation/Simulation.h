@@ -110,6 +110,7 @@ class Simulation
 
 	inline void updateChannelsStates();
 	inline void updateParticlesPositions();
+	inline void updateCollisions();
 	inline void update();
 	inline void render();
 
