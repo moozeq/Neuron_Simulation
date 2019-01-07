@@ -4,6 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <algorithm>
 
 #include <vector>
 
@@ -37,10 +38,10 @@ namespace phy {
 	constexpr double u1 = 1.6605389274e-27;
 	constexpr double pi = 3.14159265359;
 
-	// >>>>>> CHANGEME <<<<<<
-	constexpr double tempIonScale = 100;
+	// >>>>>> CHANGEME <<<<<< no scale
+	constexpr double tempIonScale = 50;
+	// >>>>>> CHANGEME <<<<<< no scale
 	constexpr double tempChannelTimeScale = 1e-4;
-	// >>>>>> END CHANGEME <<<<<<
 
 	constexpr double lipidBilayerWidth = 60 * A;
 
@@ -48,7 +49,7 @@ namespace phy {
 	constexpr double NapOpenTime = 1e-3 * tempChannelTimeScale;
 	constexpr double NapInactiveTime = 1e-3 * tempChannelTimeScale;
 
-	// CHANGEME set proper Kp channel open treshold
+	// >>>>>> CHANGEME <<<<<< set proper Kp channel open treshold
 	constexpr double KpOpenTreshold = 100e-3;
 
 	constexpr double NapR = 1.16 * A * tempIonScale;
@@ -85,6 +86,10 @@ struct FCoord8 {
 
 static inline double getRandDouble(double min, double max) {
 	return ((max - min) * ((double)rand() / (double)RAND_MAX) + min);
+}
+
+static inline double getGap(double sphereRadius, double cylinderRadius) {
+	return sphereRadius - sqrt(sphereRadius * sphereRadius - cylinderRadius * cylinderRadius);
 }
 
 static inline float getPointLineDistance(const float point[3], const float startPoint[3], const float stopPoint[3]) {
@@ -173,7 +178,7 @@ static Particle* newParticle(double boundaries, particle::Type type) {
 	particle->vx = 0.0;
 	particle->vy = 0.0;
 	particle->vz = 0.0;
-	particle->x = getRandDouble(-boundaries, boundaries) - 3.0f;
+	particle->x = getRandDouble(-boundaries, boundaries);
 	particle->y = getRandDouble(-boundaries, boundaries);
 	particle->z = getRandDouble(-boundaries, boundaries);
 

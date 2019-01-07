@@ -9,7 +9,10 @@ namespace collision {
 
 namespace barrier {
 	enum Type {
-		SOMA, AXON, DENDRITE
+		SOMA, AXON, DENDRITE, AXON_HILLOCK, TYPES_COUNT = 3, DENSITY_TYPES_COUNT
+	};
+	enum Connection {
+		SOMA_AXON, DENDRITE_SOMA
 	};
 }
 
@@ -26,6 +29,8 @@ protected:
 	unsigned KpChannelsIndexFrom;
 	unsigned KpChannelsIndexTo;
 
+	float lipidBilayerWidth;
+	float radius;
 	float x0;
 	float y0;
 	float z0;
@@ -39,6 +44,8 @@ protected:
 
 	std::vector<FCoord8> outerLayerVertices;
 	std::vector<UCoord3> outerLayerIndices;
+	
+	virtual GLuint generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices) = 0;
 
 public:
 	virtual collision::Type checkCollision(const float newCoords[3], const float oldCoords[3]) const = 0;

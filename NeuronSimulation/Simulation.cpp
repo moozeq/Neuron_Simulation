@@ -99,8 +99,8 @@ void Simulation::setupNeuronStructures()
 {
 	neuron = new Neuron(metricFactor, timeFactor, config.NapIonsChannelsDensity, config.KpIonsChannelsDensity);
 	channelsBufferSize = neuron->channels.size();
-	NapChannelsCount = neuron->NapChannelsCount;
-	KpChannelsCount = neuron->KpChannelsCount;
+	NapChannelsCount = neuron->AllNapChannelsCount;
+	KpChannelsCount = neuron->AllKpChannelsCount;
 }
 
 void Simulation::setupParticlesStructures()

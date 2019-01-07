@@ -7,6 +7,7 @@ GLuint Soma::generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>&
 	float t = ((1 + sqrt(5.0f)) / 2.0f) * scale;
 	float half = 1.0f * scale;
 
+	// TODO add texture and proper normals
 	vertices.push_back(FCoord8({ -half + x0, t + y0, 0 + z0, 0, 0, 0, 0, 0 }));
 	vertices.push_back(FCoord8({ half + x0, t + y0, 0 + z0, 0, 0, 0, 0, 0 }));
 	vertices.push_back(FCoord8({ -half + x0, -t + y0, 0 + z0, 0, 0, 0, 0, 0 }));
@@ -53,9 +54,10 @@ GLuint Soma::generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>&
 	return generateVAO(&vertices, &indices);
 }
 
-Soma::Soma(float coords[3], float _radius, float _lipidBilayerWidth) :
-	radius(_radius), lipidBilayerWidth(_lipidBilayerWidth)
+Soma::Soma(float coords[3], float _radius, float _lipidBilayerWidth)
 {
+	radius = _radius;
+	lipidBilayerWidth = _lipidBilayerWidth;
 	x0 = coords[0];
 	y0 = coords[1];
 	z0 = coords[2];
@@ -66,18 +68,28 @@ Soma::Soma(float coords[3], float _radius, float _lipidBilayerWidth) :
 	radius += lipidBilayerWidth;
 	outerLayerVAO = generateLayer(outerLayerVertices, outerLayerIndices);
 
-	radius -= lipidBilayerWidth / 2;
+	radius = _radius;
 }
 
 collision::Type Soma::checkCollision(const float newCoords[3], const float oldCoords[3]) const
 {
+	// TODO not only X coord but point
+	for (const float pointX : connectPointsXRight) {
+		if (newCoords[0] > pointX)
+			return collision::NONE;
+	}
+	for (const float pointX : connectPointsXLeft) {
+		if (newCoords[0] < pointX)
+			return collision::NONE;
+	}
+
+	float halfLipidBilayerWidth = lipidBilayerWidth / 2.0f;
 	float newD = glm::distance(glm::vec3(newCoords[0], newCoords[1], newCoords[2]), glm::vec3(x0, y0, z0));
 	float oldD = glm::distance(glm::vec3(oldCoords[0], oldCoords[1], oldCoords[2]), glm::vec3(x0, y0, z0));
-	float halfLipidBilayerWidth = lipidBilayerWidth / 2;
 
-	if (oldD <= radius - halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
+	if (oldD < radius - halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
 		return collision::INSIDE;
-	if (newD < radius + halfLipidBilayerWidth && oldD >= radius + halfLipidBilayerWidth)
+	if (newD < radius + halfLipidBilayerWidth && oldD > radius + halfLipidBilayerWidth)
 		return collision::OUTSIDE;
 
 	return collision::NONE;
@@ -85,12 +97,13 @@ collision::Type Soma::checkCollision(const float newCoords[3], const float oldCo
 
 bool Soma::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const
 {
-	float precision = 0.0001f;
+	// TODO better finding collision point
+	float precision = 0.001f;
 	float barrierRadius;
 	if (collisionType == collision::INSIDE)
-		barrierRadius = radius - lipidBilayerWidth / 2;
+		barrierRadius = radius - lipidBilayerWidth / 2.0f;
 	else if (collisionType == collision::OUTSIDE)
-		barrierRadius = radius + lipidBilayerWidth / 2;
+		barrierRadius = radius + lipidBilayerWidth / 2.0f;
 	else
 		return false;
 
@@ -110,6 +123,9 @@ bool Soma::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3
 		}
 	}
 
+	point[0] = (newCoords[0] - oldCoords[0]) / 2.0f;
+	point[1] = (newCoords[1] - oldCoords[1]) / 2.0f;
+	point[2] = (newCoords[2] - oldCoords[2]) / 2.0f;
 	return false;
 }
 
@@ -125,6 +141,7 @@ bool Soma::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collisio
 
 bool Soma::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 {
+	// TODO not only X coord but point
 	float u = getRandDouble(0.0, 1.0);
 	float v = getRandDouble(0.0, 1.0);
 	float theta = 2 * phy::pi * u;
@@ -134,5 +151,24 @@ bool Soma::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 	point[2] = z0 + (radius * cos(phi));
 	inOutVec = glm::normalize(glm::vec3(point[0] - x0, point[1] - y0, point[2] - z0));
 
+	for (const float pointX : connectPointsXRight) {
+		if (point[0] > pointX)
+			return false;
+	}
+	for (const float pointX : connectPointsXLeft) {
+		if (point[0] < pointX)
+			return false;
+	}
 	return true;
+}
+
+void Soma::addConnection(float connectionPoint[3], float connectionRadius, barrier::Connection connectionType)
+{
+	float h = getGap(radius, connectionRadius);
+	if (connectionType == barrier::SOMA_AXON)
+		connectPointsXRight.push_back(connectionPoint[0] - h);
+	else if (connectionType == barrier::DENDRITE_SOMA)
+		connectPointsXLeft.push_back(connectionPoint[0] + h);
+
+	connectedBarrierRadius.push_back(connectionRadius);
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "Channel.h"
+#include "Barrier.h"
 
 struct Config
 {
@@ -25,8 +25,8 @@ struct Config
 	std::string otherParticlesTexturePath;
 
 	// channels
-	double NapIonsChannelsDensity;
-	double KpIonsChannelsDensity;
+	double NapIonsChannelsDensity[barrier::DENSITY_TYPES_COUNT];
+	double KpIonsChannelsDensity[barrier::DENSITY_TYPES_COUNT];
 
 	std::string NapChannelTexturePath;
 	std::string KpChannelTexturePath;

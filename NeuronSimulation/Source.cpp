@@ -14,7 +14,7 @@ int main(void)
 	// distance 1.0 in simulation is 1.0 um in real world
 	config.metricFactor = 1e-6;
 	// time 1.0 in simulation is 1.0 ns in real world
-	config.timeFactor = 1e-9;
+	config.timeFactor = 1e-7;
 
 	config.buffersNum = 2;
 
@@ -22,13 +22,22 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 3000;
-	config.KpIonsNum = 3000;
-	config.ClmIonsNum = 3000;
+	config.NapIonsNum = 7000;
+	config.KpIonsNum = 1000;
+	config.ClmIonsNum = 1000;
 	config.otherParticlesNum = 0;
 
-	config.NapIonsChannelsDensity = 1000.0f;
-	config.KpIonsChannelsDensity = 100.0f;
+	config.NapIonsChannelsDensity[barrier::SOMA] = 3000.0f;
+	config.KpIonsChannelsDensity[barrier::SOMA] = 100.0f;
+
+	config.NapIonsChannelsDensity[barrier::AXON] = 3000.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 100.0f;
+
+	config.NapIonsChannelsDensity[barrier::DENDRITE] = 3000.0f;
+	config.KpIonsChannelsDensity[barrier::DENDRITE] = 100.0f;
+
+	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 3000.0f;
+	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 100.0f;
 
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";

@@ -139,6 +139,7 @@
     <ClCompile Include="Axon.cpp" />
     <ClCompile Include="Barrier.cpp" />
     <ClCompile Include="Channel.cpp" />
+    <ClCompile Include="Dendrite.cpp" />
     <ClCompile Include="Neuron.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Soma.cpp" />
@@ -150,6 +151,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Channel.h" />
     <ClInclude Include="Config.h" />
+    <ClInclude Include="Dendrite.h" />
     <ClInclude Include="Neuron.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="ShaderProgram.h" />

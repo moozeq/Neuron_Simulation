@@ -1,6 +1,6 @@
-#include "Axon.h"
+#include "Dendrite.h"
 
-GLuint Axon::generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices)
+GLuint Dendrite::generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>& indices)
 {
 	GLuint offset = slices + 2; // 2 midpoints
 	for (GLuint i = 1; i < slices; ++i) {
@@ -13,7 +13,7 @@ GLuint Axon::generateLayer(std::vector<FCoord8>& vertices, std::vector<UCoord3>&
 	return generateVAO(&vertices, &indices);
 }
 
-void Axon::addCircle(std::vector<FCoord8>& vertices)
+void Dendrite::addCircle(std::vector<FCoord8>& vertices)
 {
 	GLuint offset = vertices.size();
 	GLfloat x = -length / 2.0f;
@@ -39,12 +39,11 @@ void Axon::addCircle(std::vector<FCoord8>& vertices)
 	}
 }
 
-Axon::Axon(float coords[3], float _radius, float _length, float _lipidBilayerWidth) :
+Dendrite::Dendrite(float coords[3], float _radius, float _length, float _lipidBilayerWidth) :
 	length(_length), slices(30)
 {
 	radius = _radius;
 	lipidBilayerWidth = _lipidBilayerWidth;
-
 	x0 = coords[0];
 	y0 = coords[1];
 	z0 = coords[2];
@@ -72,11 +71,11 @@ Axon::Axon(float coords[3], float _radius, float _length, float _lipidBilayerWid
 	radius = _radius;
 }
 
-collision::Type Axon::checkCollision(const float newCoords[3], const float oldCoords[3]) const
+collision::Type Dendrite::checkCollision(const float newCoords[3], const float oldCoords[3]) const
 {
 	// not in barrier length
-	if (!(newCoords[0] < stopCoords[0] && newCoords[0] > startCoords[0] &&
-		oldCoords[0] < stopCoords[0] && oldCoords[0] > startCoords[0]))
+	if (!(newCoords[0] <= stopCoords[0] && newCoords[0] >= startCoords[0] &&
+		oldCoords[0] <= stopCoords[0] && oldCoords[0] >= startCoords[0]))
 		return collision::NONE;
 
 	float oldD = getPointLineDistance(oldCoords, startCoords, stopCoords);
@@ -91,7 +90,7 @@ collision::Type Axon::checkCollision(const float newCoords[3], const float oldCo
 	return collision::NONE;
 }
 
-bool Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const
+bool Dendrite::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const
 {
 	float precision = 0.001f;
 	float barrierRadius;
@@ -123,7 +122,7 @@ bool Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3
 	return false;
 }
 
-bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const
+bool Dendrite::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const
 {
 	float midPoint[3] = { x0, y0, z0 };
 	float h = getPointOnLineDistanceFromCenter(collisionPoint, midPoint, radius);
@@ -131,13 +130,13 @@ bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collisio
 		n = glm::normalize(glm::vec3(x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
 	else
 		n = glm::normalize(glm::vec3(x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
-	
+
 	if (collisionType == collision::OUTSIDE)
 		n *= -1.0f;
 	return true;
 }
 
-bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
+bool Dendrite::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 {
 	// draw x and angle
 	float x = getRandDouble(startCoords[0], stopCoords[0]);

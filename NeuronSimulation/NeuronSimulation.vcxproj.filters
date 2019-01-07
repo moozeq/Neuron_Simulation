@@ -48,6 +48,9 @@
     <ClCompile Include="Soma.cpp">
       <Filter>Neuron\Barriers</Filter>
     </ClCompile>
+    <ClCompile Include="Dendrite.cpp">
+      <Filter>Neuron\Barriers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities.h">
@@ -84,6 +87,9 @@
       <Filter>Neuron\Barriers</Filter>
     </ClInclude>
     <ClInclude Include="Soma.h">
+      <Filter>Neuron\Barriers</Filter>
+    </ClInclude>
+    <ClInclude Include="Dendrite.h">
       <Filter>Neuron\Barriers</Filter>
     </ClInclude>
   </ItemGroup>

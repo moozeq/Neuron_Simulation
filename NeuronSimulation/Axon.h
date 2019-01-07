@@ -6,9 +6,7 @@ class Axon :
 	public Barrier
 {
 	unsigned slices;
-	float radius;
 	float length;
-	float lipidBilayerWidth;
 
 	float startCoords[3];
 	float stopCoords[3];

@@ -16,6 +16,7 @@ float Neuron::addBarrier(float x, float y, float z, float radius, float length, 
 		break;
 	case barrier::DENDRITE:
 		area = 2 * phy::pi * radius * length;
+		barriers.push_back(new Dendrite(midPoint, radius, length, lipidBilayerWidth));
 		break;
 	}
 
@@ -45,7 +46,7 @@ void Neuron::setupChannels(unsigned barrierIndex)
 
 		glm::vec3 inOutVec;
 
-		barrier->getRandPointOnInnerLayer(insideCoords, inOutVec);
+		while (!(barrier->getRandPointOnInnerLayer(insideCoords, inOutVec)));
 		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * inOutVec;
 
 		outsideCoords[0] = insideCoords[0] + lipidBilayerLengthVec[0];
@@ -62,7 +63,7 @@ void Neuron::setupChannels(unsigned barrierIndex)
 
 		glm::vec3 inOutVec;
 
-		barrier->getRandPointOnInnerLayer(insideCoords, inOutVec);
+		while (!(barrier->getRandPointOnInnerLayer(insideCoords, inOutVec)));
 		glm::vec3 lipidBilayerLengthVec = glm::vec3(lipidBilayerWidth) * inOutVec;
 
 		outsideCoords[0] = insideCoords[0] + lipidBilayerLengthVec[0];
@@ -73,57 +74,127 @@ void Neuron::setupChannels(unsigned barrierIndex)
 	}
 }
 
-void Neuron::setupStructures()
+void Neuron::setupSoma()
 {
 	float somaRadius = 0.5f;
 	float somaArea;
 	unsigned somaNapChannelsCount = 0;
 	unsigned somaKpChannelsCount = 0;
 
+	somaArea = addBarrier(0.0f, 0.0f, 0.0f, somaRadius, 0.0f, barrier::SOMA);
+
+	NapChannelsCount[barrier::SOMA] = somaArea * NapChannelsDensity[barrier::SOMA];
+	KpChannelsCount[barrier::SOMA] = somaArea * KpChannelsDensity[barrier::SOMA];
+}
+
+void Neuron::setupAxon()
+{
 	// axon real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
-	float axonRadius = 0.125f;
+	float axonRadius = 0.25f;
 	float axonLength = 5.0f;
 	float axonArea;
+	double axonHillockAreaFactor = 0.1;
 	unsigned axonNapChannelsCount = 0;
 	unsigned axonKpChannelsCount = 0;
 
-	somaArea = addBarrier(-axonLength / 2.0f - somaRadius, 0.0f, 0.0f, somaRadius, 0.0f, barrier::SOMA);
-	axonArea = addBarrier(0.0f, 0.0f, 0.0f, axonRadius, axonLength, barrier::AXON);
-	
-	somaNapChannelsCount = somaArea * NapChannelsDensity;
-	somaKpChannelsCount = somaArea * KpChannelsDensity;
+	float somaRadius = barriers[0]->radius;
+	float somaAxonGap = getGap(somaRadius, axonRadius);
 
-	axonNapChannelsCount = axonArea * NapChannelsDensity;
-	axonKpChannelsCount = axonArea * KpChannelsDensity;
+	axonArea = addBarrier(somaRadius + axonLength / 2.0f - somaAxonGap, 0.0f, 0.0f, axonRadius, axonLength, barrier::AXON);
 
-	NapChannelsCount = somaNapChannelsCount + axonNapChannelsCount;
-	KpChannelsCount = somaKpChannelsCount + axonKpChannelsCount;
+	NapChannelsCount[barrier::AXON] = axonArea * ((1.0 - axonHillockAreaFactor) * NapChannelsDensity[barrier::AXON] + axonHillockAreaFactor * NapChannelsDensity[barrier::AXON_HILLOCK]);
+	KpChannelsCount[barrier::AXON] = axonArea * ((1.0 - axonHillockAreaFactor) * KpChannelsDensity[barrier::AXON] + axonHillockAreaFactor * KpChannelsDensity[barrier::AXON_HILLOCK]);
+}
 
+void Neuron::setupDendrites()
+{
+	// dendrite real radius = 0.0625um, length = 1um
+	float dendriteRadius = 0.0625f;
+	float dendriteLength = 1.0f;
+	float dendriteArea;
+
+	float somaRadius = barriers[0]->radius;
+	float dendriteSomaGap = getGap(somaRadius, dendriteRadius);
+
+	dendriteArea = addBarrier(-somaRadius - dendriteLength / 2.0f + dendriteSomaGap, 0.0f, 0.0f, dendriteRadius, dendriteLength, barrier::DENDRITE);
+
+	NapChannelsCount[barrier::DENDRITE] = dendriteArea * NapChannelsDensity[barrier::DENDRITE];
+	KpChannelsCount[barrier::DENDRITE] = dendriteArea * KpChannelsDensity[barrier::DENDRITE];
+}
+
+void Neuron::setupChannelsIndexes()
+{
+	// soma
 	barriers[0]->NapChannelsIndexFrom = 0;
-	barriers[0]->NapChannelsIndexTo = somaNapChannelsCount;
+	barriers[0]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA];
 
-	barriers[0]->KpChannelsIndexFrom = NapChannelsCount;
-	barriers[0]->KpChannelsIndexTo = NapChannelsCount + somaKpChannelsCount;
+	barriers[0]->KpChannelsIndexFrom = AllNapChannelsCount;
+	barriers[0]->KpChannelsIndexTo = AllNapChannelsCount + KpChannelsCount[barrier::SOMA];
 
+	// axon
+	barriers[1]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA];
+	barriers[1]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
 
-	barriers[1]->NapChannelsIndexFrom = somaNapChannelsCount;
-	barriers[1]->NapChannelsIndexTo = somaNapChannelsCount + axonNapChannelsCount;
+	barriers[1]->KpChannelsIndexFrom = AllNapChannelsCount + KpChannelsCount[barrier::SOMA];
+	barriers[1]->KpChannelsIndexTo = AllNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
 
-	barriers[1]->KpChannelsIndexFrom = NapChannelsCount + somaKpChannelsCount;
-	barriers[1]->KpChannelsIndexTo = NapChannelsCount + somaKpChannelsCount + axonKpChannelsCount;
-	
-	channels.resize(NapChannelsCount + KpChannelsCount);
+	// dendrite
+	barriers[2]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
+	barriers[2]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON] + NapChannelsCount[barrier::DENDRITE];
 
+	barriers[2]->KpChannelsIndexFrom = AllNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
+	barriers[2]->KpChannelsIndexTo = AllNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON] + KpChannelsCount[barrier::DENDRITE];
+
+}
+
+void Neuron::setupConnections()
+{
+	// add connection points
+	Soma* soma = static_cast<Soma*>(barriers[0]);
+	float somaRadius = barriers[0]->radius;
+	float axonRadius = barriers[1]->radius;
+	float dendriteRadius = barriers[2]->radius;
+
+	float somaAxonConnection[3] = { soma->x0 + somaRadius, 0.0f, 0.0f };
+	float dendriteSomaConnection[3] = { soma->x0 - somaRadius, 0.0f, 0.0f };
+
+	soma->addConnection(somaAxonConnection, axonRadius, barrier::SOMA_AXON);
+	soma->addConnection(dendriteSomaConnection, dendriteRadius, barrier::DENDRITE_SOMA);
+}
+
+void Neuron::setupStructures()
+{
+	setupSoma();
+	setupAxon();
+	setupDendrites();
+
+	for (int i = 0; i < barrier::TYPES_COUNT; ++i) {
+		AllNapChannelsCount += NapChannelsCount[i];
+		AllKpChannelsCount += KpChannelsCount[i];
+	}
+
+	setupChannelsIndexes();
+	setupConnections();
+
+	// distribute channels on barriers
+	channels.resize(AllNapChannelsCount + AllKpChannelsCount);
 	for (unsigned i = 0; i < barriers.size(); ++i)
 		setupChannels(i);
 }
 
-Neuron::Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity, double _KpChannelsDensity) :
+Neuron::Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity[barrier::DENSITY_TYPES_COUNT], double _KpChannelsDensity[barrier::DENSITY_TYPES_COUNT]) :
 	metricFactor(_metricFactor), timeFactor(_timeFactor),
-	NapChannelsDensity(_NapChannelsDensity), KpChannelsDensity(_KpChannelsDensity),
-	NapChannelsCount(0), KpChannelsCount(0)
+	AllNapChannelsCount(0), AllKpChannelsCount(0)
 {
 	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
+	for (int i = 0; i < barrier::DENSITY_TYPES_COUNT; ++i) {
+		NapChannelsDensity[i] = _NapChannelsDensity[i];
+		KpChannelsDensity[i] = _KpChannelsDensity[i];
+	}
+	for (int i = 0; i < barrier::TYPES_COUNT; ++i) {
+		NapChannelsCount[i] = 0;
+		KpChannelsCount[i] = 0;
+	}
 	setupPrograms();
 	setupStructures();
 }
@@ -168,9 +239,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 
 		if (collisionType) {
 			float collisionPoint[3];
-			bool collisionStrike = barrier->getCollisionPoint(collisionPoint, newCoords, oldCoords, collisionType);
-			if (!collisionStrike)
-				return false;
+			barrier->getCollisionPoint(collisionPoint, newCoords, oldCoords, collisionType);
 
 			// checking only channels with proper type
 			unsigned channelsIndexFrom, channelsIndexTo;
