@@ -56,14 +56,14 @@ Dendrite::Dendrite(float coords[3], float _radius, float _length, float _lipidBi
 	stopCoords[1] = coords[1];
 	stopCoords[2] = coords[2];
 
+	// add inner layer
 	radius -= lipidBilayerWidth / 2.0f;
-
 	addCircle(innerLayerVertices);
 	addCircle(innerLayerVertices);
 	innerLayerVAO = generateLayer(innerLayerVertices, innerLayerIndices);
 
+	// add outer layer
 	radius += lipidBilayerWidth;
-
 	addCircle(outerLayerVertices);
 	addCircle(outerLayerVertices);
 	outerLayerVAO = generateLayer(outerLayerVertices, outerLayerIndices);
@@ -74,18 +74,22 @@ Dendrite::Dendrite(float coords[3], float _radius, float _length, float _lipidBi
 collision::Type Dendrite::checkCollision(const float newCoords[3], const float oldCoords[3]) const
 {
 	// not in barrier length
-	if (!(newCoords[0] <= stopCoords[0] && newCoords[0] >= startCoords[0] &&
-		oldCoords[0] <= stopCoords[0] && oldCoords[0] >= startCoords[0]))
+	if (!(newCoords[0] < stopCoords[0] && newCoords[0] > startCoords[0] &&
+		oldCoords[0] < stopCoords[0] && oldCoords[0] > startCoords[0]))
 		return collision::NONE;
 
 	float oldD = getPointLineDistance(oldCoords, startCoords, stopCoords);
 	float newD = getPointLineDistance(newCoords, startCoords, stopCoords);
-	float halfLipidBilayerWidth = lipidBilayerWidth / 2;
+	float halfLipidBilayerWidth = lipidBilayerWidth / 2.0f;
 
-	if (oldD <= radius - halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
+	if (oldD < radius - halfLipidBilayerWidth && newD >= radius - halfLipidBilayerWidth)
 		return collision::INSIDE;
-	if (newD < radius + halfLipidBilayerWidth && oldD >= radius + halfLipidBilayerWidth)
+	if (newD <= radius + halfLipidBilayerWidth && oldD > radius + halfLipidBilayerWidth)
 		return collision::OUTSIDE;
+
+	// TODO better inside bilayer collision
+	if (oldD < radius + halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
+		return collision::INSIDE;
 
 	return collision::NONE;
 }
@@ -95,9 +99,9 @@ bool Dendrite::getCollisionPoint(float* point, float newCoords[3], float oldCoor
 	float precision = 0.001f;
 	float barrierRadius;
 	if (collisionType == collision::INSIDE)
-		barrierRadius = radius - lipidBilayerWidth / 2;
+		barrierRadius = radius - lipidBilayerWidth / 2.0f;
 	else if (collisionType == collision::OUTSIDE)
-		barrierRadius = radius + lipidBilayerWidth / 2;
+		barrierRadius = radius + lipidBilayerWidth / 2.0f;
 	else
 		return false;
 
@@ -142,8 +146,8 @@ bool Dendrite::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 	float x = getRandDouble(startCoords[0], stopCoords[0]);
 	float angle = getRandDouble(0.0, 2 * phy::pi);
 	point[0] = x;
-	point[1] = (radius - lipidBilayerWidth / 2) * sin(angle);
-	point[2] = (radius - lipidBilayerWidth / 2) * cos(angle);
+	point[1] = (radius - lipidBilayerWidth / 2.0f) * sin(angle);
+	point[2] = (radius - lipidBilayerWidth / 2.0f) * cos(angle);
 
 	inOutVec = glm::normalize(glm::vec3(point[0] - x, point[1] - y0, point[2] - z0));
 	return true;

@@ -62,7 +62,7 @@ Soma::Soma(float coords[3], float _radius, float _lipidBilayerWidth)
 	y0 = coords[1];
 	z0 = coords[2];
 
-	radius -= lipidBilayerWidth / 2;
+	radius -= lipidBilayerWidth / 2.0f;
 	innerLayerVAO = generateLayer(innerLayerVertices, innerLayerIndices);
 
 	radius += lipidBilayerWidth;
@@ -75,11 +75,11 @@ collision::Type Soma::checkCollision(const float newCoords[3], const float oldCo
 {
 	// TODO not only X coord but point
 	for (const float pointX : connectPointsXRight) {
-		if (newCoords[0] > pointX)
+		if (newCoords[0] > pointX && oldCoords[0] > pointX)
 			return collision::NONE;
 	}
 	for (const float pointX : connectPointsXLeft) {
-		if (newCoords[0] < pointX)
+		if (newCoords[0] < pointX&& oldCoords[0] < pointX)
 			return collision::NONE;
 	}
 
@@ -87,10 +87,14 @@ collision::Type Soma::checkCollision(const float newCoords[3], const float oldCo
 	float newD = glm::distance(glm::vec3(newCoords[0], newCoords[1], newCoords[2]), glm::vec3(x0, y0, z0));
 	float oldD = glm::distance(glm::vec3(oldCoords[0], oldCoords[1], oldCoords[2]), glm::vec3(x0, y0, z0));
 
-	if (oldD < radius - halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
+	if (oldD < radius - halfLipidBilayerWidth && newD >= radius - halfLipidBilayerWidth)
 		return collision::INSIDE;
-	if (newD < radius + halfLipidBilayerWidth && oldD > radius + halfLipidBilayerWidth)
+	if (newD <= radius + halfLipidBilayerWidth && oldD > radius + halfLipidBilayerWidth)
 		return collision::OUTSIDE;
+
+	// TODO better inside bilayer collision
+	if (oldD < radius + halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
+		return collision::INSIDE;
 
 	return collision::NONE;
 }
@@ -146,9 +150,9 @@ bool Soma::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 	float v = getRandDouble(0.0, 1.0);
 	float theta = 2 * phy::pi * u;
 	float phi = acos(2 * v - 1);
-	point[0] = x0 + (radius * sin(phi) * cos(theta));
-	point[1] = y0 + (radius * sin(phi) * sin(theta));
-	point[2] = z0 + (radius * cos(phi));
+	point[0] = x0 + ((radius - lipidBilayerWidth / 2.0f) * sin(phi) * cos(theta));
+	point[1] = y0 + ((radius - lipidBilayerWidth / 2.0f) * sin(phi) * sin(theta));
+	point[2] = z0 + ((radius - lipidBilayerWidth / 2.0f) * cos(phi));
 	inOutVec = glm::normalize(glm::vec3(point[0] - x0, point[1] - y0, point[2] - z0));
 
 	for (const float pointX : connectPointsXRight) {
@@ -165,6 +169,7 @@ bool Soma::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 void Soma::addConnection(float connectionPoint[3], float connectionRadius, barrier::Connection connectionType)
 {
 	float h = getGap(radius, connectionRadius);
+
 	if (connectionType == barrier::SOMA_AXON)
 		connectPointsXRight.push_back(connectionPoint[0] - h);
 	else if (connectionType == barrier::DENDRITE_SOMA)

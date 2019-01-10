@@ -109,7 +109,7 @@ void Neuron::setupAxon()
 void Neuron::setupDendrites()
 {
 	// dendrite real radius = 0.0625um, length = 1um
-	float dendriteRadius = 0.0625f;
+	float dendriteRadius = 0.125f;
 	float dendriteLength = 1.0f;
 	float dendriteArea;
 
