@@ -13,6 +13,7 @@ Channel::Channel(float coordsIn[3], float coordsOut[3], channel::Type _type, cha
 {
 	switch (_type)
 	{
+	case channel::NAP_SYNAPSE:
 	case channel::NAP:
 		radius = phy::NapR;
 		break;

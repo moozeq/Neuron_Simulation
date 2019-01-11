@@ -178,12 +178,28 @@ bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collisio
 bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 {
 	// draw x and angle
-	float x = getRandDouble(startCoords[0], stopCoords[0]);
+	float synapse = getRandDouble(0.0, 1.0);
 	float angle = getRandDouble(0.0, 2 * phy::pi);
-	point[0] = x;
-	point[1] = innerRadius * sin(angle);
-	point[2] = innerRadius * cos(angle);
+	float x, r;
+	if (synapse < synapseProbability) {
+		x = stopCoords[0] - lipidBilayerWidth;
+		r = getRandDouble(0.0, 1.0) * innerRadius;
+		inOutVec = glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f));
+	}
+	else {
+		x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
+		r = innerRadius;
+		inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
+	}
 
-	inOutVec = glm::normalize(glm::vec3(point[0] - x, point[1] - y0, point[2] - z0));
+	point[0] = x;
+	point[1] = r * sin(angle);
+	point[2] = r * cos(angle);
+
 	return true;
+}
+
+void Axon::setSynapseProbability(float probability)
+{
+	synapseProbability = probability;
 }

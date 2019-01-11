@@ -8,6 +8,7 @@ class Axon :
 	unsigned slices;
 	float length;
 	float discPoint[3];
+	float synapseProbability;
 
 	float startCoords[3];
 	float stopCoords[3];
@@ -22,4 +23,6 @@ public:
 	int getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const;
 	bool getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const;
 	bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const;
+
+	void setSynapseProbability(float probability);
 };

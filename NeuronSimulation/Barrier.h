@@ -9,7 +9,10 @@ namespace collision {
 
 namespace barrier {
 	enum Type {
-		SOMA, AXON, DENDRITE, AXON_HILLOCK, TYPES_COUNT = 3, DENSITY_TYPES_COUNT
+		SOMA, AXON, DENDRITE, AXON_HILLOCK, SYNAPSE
+	};
+	enum Counts {
+		TYPES_COUNT = 3, DENSITY_TYPES_COUNT = 5
 	};
 	enum Connection {
 		SOMA_AXON, DENDRITE_SOMA

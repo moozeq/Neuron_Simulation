@@ -23,21 +23,24 @@ int main(void)
 	config.logPath = "simulation.log";
 
 	config.NapIonsNum = 5000;
-	config.KpIonsNum = 3000;
-	config.ClmIonsNum = 3000;
+	config.KpIonsNum = 000;
+	config.ClmIonsNum = 000;
 	config.otherParticlesNum = 0;
 
 	config.NapIonsChannelsDensity[barrier::SOMA] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::SOMA] = 100.0f;
+	config.KpIonsChannelsDensity[barrier::SOMA] = 0.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON] = 100.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 0.0f;
 
 	config.NapIonsChannelsDensity[barrier::DENDRITE] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::DENDRITE] = 100.0f;
+	config.KpIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 3000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 100.0f;
+	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 0.0f;
+
+	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 3000.0f;
+	config.KpIonsChannelsDensity[barrier::SYNAPSE] = 0.0f;
 
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";

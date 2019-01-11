@@ -449,19 +449,36 @@ inline void Simulation::updateChannelsStates()
 			Ein += phy::k * particle->charge / (metricFactor * d);
 		}
 
+		// calc voltage ouside neuron
+		for (long j = 0; j < particlesBufferSize; ++j) {
+			particle = &particles[bufferNum][j];
+
+			dx = particle->x - currChannel.xOut;
+			dy = particle->y - currChannel.yOut;
+			dz = particle->z - currChannel.zOut;
+
+			d = sqrt(dx * dx + dy * dy + dz * dz);
+			if (d == 0.0)
+				continue;
+
+			Eout += phy::k * particle->charge / (metricFactor * d);
+		}
+
 		currChannel.U = U = Ein - Eout;
 
-		// TODO probability to open instead of threshold
+		// TODO probability to open instead of threshold (hidden markov model)
 		// TODO add relative refraction 
 		// TODO refactor, delete logs
 		// TODO channels open/close/inactive when deltaTime < 0
 
+		/*if (i == 0 || fabs(currChannel.xIn - 5.0f) < 0.01f) {
+			std::cout << "\nChannel [" + std::to_string(i) + "] U = " + std::to_string(U) + " state = " + std::to_string(currChannel.state);
+			std::cout << "\tx = " + std::to_string(currChannel.xIn) + "\ty = " + std::to_string(currChannel.yIn) + "\tz = " + std::to_string(currChannel.zIn);
+		}*/
+
 		if (currChannel.type == channel::NAP) {
 			if (currChannel.state == channel::CLOSED) {
 				if (U > phy::NapOpenTreshold) {
-
-					//log(logfile, "[C] Channel opened, U = " + std::to_string(U));
-
 					currChannel.state = channel::OPEN;
 					currChannel.timeLeft = phy::NapOpenTime;
 					channelsAttribs[i * 4 + 3] = 0.0f;
@@ -469,15 +486,7 @@ inline void Simulation::updateChannelsStates()
 			}
 			else if (currChannel.state == channel::OPEN) {
 				currChannel.timeLeft -= fabs(deltaTime);
-
-				//log(logfile, "[O] Channel open, U = " + std::to_string(U));
-				//streamObj << currChannel.timeLeft;
-				//log(logfile, "[O] Channel open, time left = " + streamObj.str());
-
 				if (currChannel.timeLeft < 0.0f) {
-
-					//log(logfile, "[I] Channel inactivated, U = " + std::to_string(U));
-
 					currChannel.state = channel::INACTIVE;
 					currChannel.timeLeft = phy::NapInactiveTime;
 					channelsAttribs[i * 4 + 3] = 0.5f;
@@ -485,15 +494,7 @@ inline void Simulation::updateChannelsStates()
 			}
 			else if (currChannel.state == channel::INACTIVE) {
 				currChannel.timeLeft -= fabs(deltaTime);
-
-				//log(logfile, "[I] Channel inactive, U = " + std::to_string(U));
-				//streamObj << currChannel.timeLeft;
-				//log(logfile, "[I] Channel inactive, time left = " + streamObj.str());
-
 				if (currChannel.timeLeft < 0.0f) {
-
-					//log(logfile, "[C] Channel closed, U = " + std::to_string(U));
-
 					currChannel.state = channel::CLOSED;
 					channelsAttribs[i * 4 + 3] = 1.0f;
 				}

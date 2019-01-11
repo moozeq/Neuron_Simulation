@@ -94,17 +94,26 @@ void Neuron::setupAxon()
 	float axonLength = 5.0f;
 	float axonArea;
 	double axonHillockAreaFactor = 0.1;
-	unsigned axonNapChannelsCount = 0;
-	unsigned axonKpChannelsCount = 0;
 
 	float somaRadius = barriers[0]->radius;
 	float somaInnerRadius = barriers[0]->innerRadius;
 	float somaAxonGap = getGap(somaInnerRadius, axonRadius - lipidBilayerWidth / 2.0f);
 
 	axonArea = addBarrier(somaRadius + axonLength / 2.0f - somaAxonGap, 0.0f, 0.0f, axonRadius, axonLength, barrier::AXON);
+	unsigned axonNapChannelsCount = axonArea * ((1.0 - axonHillockAreaFactor) * NapChannelsDensity[barrier::AXON] + axonHillockAreaFactor * NapChannelsDensity[barrier::AXON_HILLOCK]);
+	unsigned axonKpChannelsCount = axonArea * ((1.0 - axonHillockAreaFactor) * KpChannelsDensity[barrier::AXON] + axonHillockAreaFactor * KpChannelsDensity[barrier::AXON_HILLOCK]);
+	NapChannelsCount[barrier::AXON] = axonNapChannelsCount;
+	KpChannelsCount[barrier::AXON] = axonKpChannelsCount;
 
-	NapChannelsCount[barrier::AXON] = axonArea * ((1.0 - axonHillockAreaFactor) * NapChannelsDensity[barrier::AXON] + axonHillockAreaFactor * NapChannelsDensity[barrier::AXON_HILLOCK]);
-	KpChannelsCount[barrier::AXON] = axonArea * ((1.0 - axonHillockAreaFactor) * KpChannelsDensity[barrier::AXON] + axonHillockAreaFactor * KpChannelsDensity[barrier::AXON_HILLOCK]);
+	float synapseArea = phy::pi * axonRadius * axonRadius;
+	unsigned axonSynapseNapChannelsCount = synapseArea * NapChannelsDensity[barrier::SYNAPSE];
+	unsigned axonSynapseKpChannelsCount = synapseArea * KpChannelsDensity[barrier::SYNAPSE];
+	NapChannelsCount[barrier::AXON] += axonSynapseNapChannelsCount;
+	KpChannelsCount[barrier::AXON] += axonSynapseKpChannelsCount;
+
+	float probability = (float)axonSynapseNapChannelsCount / (float)(axonSynapseNapChannelsCount + axonNapChannelsCount);
+	Axon* axon = static_cast<Axon*>(barriers[1]);
+	axon->setSynapseProbability(probability);
 }
 
 void Neuron::setupDendrites()
@@ -119,9 +128,20 @@ void Neuron::setupDendrites()
 	float dendriteSomaGap = getGap(somaInnerRadius, dendriteRadius - lipidBilayerWidth / 2.0f);
 
 	dendriteArea = addBarrier(-somaRadius - dendriteLength / 2.0f + dendriteSomaGap, 0.0f, 0.0f, dendriteRadius, dendriteLength, barrier::DENDRITE);
+	unsigned dendriteNapChannelsCount = dendriteArea * NapChannelsDensity[barrier::DENDRITE];
+	unsigned dendriteKpChannelsCount = dendriteArea * KpChannelsDensity[barrier::DENDRITE];
+	NapChannelsCount[barrier::DENDRITE] = dendriteNapChannelsCount;
+	KpChannelsCount[barrier::DENDRITE] = dendriteKpChannelsCount;
+	
+	float synapseArea = phy::pi * dendriteRadius * dendriteRadius;
+	unsigned dendriteSynapseNapChannelsCount = synapseArea * NapChannelsDensity[barrier::SYNAPSE];
+	unsigned dendriteSynapseKpChannelsCount = synapseArea * KpChannelsDensity[barrier::SYNAPSE];
+	NapChannelsCount[barrier::DENDRITE] += dendriteSynapseNapChannelsCount;
+	KpChannelsCount[barrier::DENDRITE] += dendriteSynapseKpChannelsCount;
 
-	NapChannelsCount[barrier::DENDRITE] = dendriteArea * NapChannelsDensity[barrier::DENDRITE];
-	KpChannelsCount[barrier::DENDRITE] = dendriteArea * KpChannelsDensity[barrier::DENDRITE];
+	float probability = (float)dendriteSynapseNapChannelsCount / (float)(dendriteSynapseNapChannelsCount + dendriteNapChannelsCount);
+	Dendrite* dendrite = static_cast<Dendrite*>(barriers[2]);
+	dendrite->setSynapseProbability(probability);
 }
 
 void Neuron::setupChannelsIndexes()

@@ -4,7 +4,7 @@
 namespace channel {
 	// must be in same order as in particle namespace
 	enum Type {
-		NAP, KP, TYPES_COUNT
+		NAP, KP, NAP_SYNAPSE, TYPES_COUNT
 	};
 	enum Gating {
 		VOLTAGE_GATED, LIGAND_GATED
