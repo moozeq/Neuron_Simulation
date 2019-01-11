@@ -110,10 +110,11 @@ void Simulation::setupParticlesStructures()
 	partAccOrigin.reserve(particlesBufferSize);
 	size_t i = 0;
 	size_t offset = 0;
+	float boundaries = 0.02f;
 
 	offset += config.NapIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.05, particle::NAP);
+		Particle* particle = newParticle(boundaries, particle::NAP);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::NapA / metricFactorSq);
@@ -123,7 +124,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.KpIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.05, particle::KP);
+		Particle* particle = newParticle(boundaries, particle::KP);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::KpA / metricFactorSq);
@@ -133,7 +134,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.ClmIonsNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.05, particle::CLM);
+		Particle* particle = newParticle(boundaries, particle::CLM);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back(phy::ClmA / metricFactorSq);
@@ -143,7 +144,7 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.otherParticlesNum;
 	while (i < offset) {
-		Particle* particle = newParticle(0.05, particle::MASSIVEION);
+		Particle* particle = newParticle(boundaries, particle::MASSIVEION);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back((phy::k * particle->charge / particle->mass) / metricFactorSq);
@@ -448,20 +449,6 @@ inline void Simulation::updateChannelsStates()
 			Ein += phy::k * particle->charge / (metricFactor * d);
 		}
 
-		// calc voltage outside neuron
-		for (long j = 0; j < particlesBufferSize; ++j) {
-			particle = &particles[bufferNum][j];
-
-			dx = particle->x - currChannel.xOut;
-			dy = particle->y - currChannel.yOut;
-			dz = particle->z - currChannel.zOut;
-
-			d = sqrt(dx * dx + dy * dy + dz * dz);
-			if (d == 0.0)
-				continue;
-
-			Eout += phy::k * particle->charge / (metricFactor * d);
-		}
 		currChannel.U = U = Ein - Eout;
 
 		// TODO probability to open instead of threshold

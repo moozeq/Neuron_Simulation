@@ -3,7 +3,7 @@
 
 namespace collision {
 	enum Type {
-		NONE, INSIDE, OUTSIDE
+		NONE, INSIDE, OUTSIDE, DISC
 	};
 }
 
@@ -29,7 +29,10 @@ protected:
 	unsigned KpChannelsIndexFrom;
 	unsigned KpChannelsIndexTo;
 
+	float precision;
 	float lipidBilayerWidth;
+	float innerRadius;
+	float outerRadius;
 	float radius;
 	float x0;
 	float y0;
@@ -49,7 +52,7 @@ protected:
 
 public:
 	virtual collision::Type checkCollision(const float newCoords[3], const float oldCoords[3]) const = 0;
-	virtual bool getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const = 0;
+	virtual int getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const = 0;
 	virtual bool getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const = 0;
 	virtual bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const = 0;
 	void render() const;

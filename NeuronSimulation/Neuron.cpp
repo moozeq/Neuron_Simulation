@@ -98,7 +98,8 @@ void Neuron::setupAxon()
 	unsigned axonKpChannelsCount = 0;
 
 	float somaRadius = barriers[0]->radius;
-	float somaAxonGap = getGap(somaRadius, axonRadius);
+	float somaInnerRadius = barriers[0]->innerRadius;
+	float somaAxonGap = getGap(somaInnerRadius, axonRadius - lipidBilayerWidth / 2.0f);
 
 	axonArea = addBarrier(somaRadius + axonLength / 2.0f - somaAxonGap, 0.0f, 0.0f, axonRadius, axonLength, barrier::AXON);
 
@@ -114,7 +115,8 @@ void Neuron::setupDendrites()
 	float dendriteArea;
 
 	float somaRadius = barriers[0]->radius;
-	float dendriteSomaGap = getGap(somaRadius, dendriteRadius);
+	float somaInnerRadius = barriers[0]->innerRadius;
+	float dendriteSomaGap = getGap(somaInnerRadius, dendriteRadius - lipidBilayerWidth / 2.0f);
 
 	dendriteArea = addBarrier(-somaRadius - dendriteLength / 2.0f + dendriteSomaGap, 0.0f, 0.0f, dendriteRadius, dendriteLength, barrier::DENDRITE);
 
@@ -151,15 +153,15 @@ void Neuron::setupConnections()
 {
 	// add connection points
 	Soma* soma = static_cast<Soma*>(barriers[0]);
-	float somaRadius = barriers[0]->radius;
-	float axonRadius = barriers[1]->radius;
-	float dendriteRadius = barriers[2]->radius;
+	float somaInnerRadius = barriers[0]->innerRadius;
+	float axonInnerRadius = barriers[1]->innerRadius;
+	float dendriteInnerRadius = barriers[2]->innerRadius;
 
-	float somaAxonConnection[3] = { soma->x0 + somaRadius, 0.0f, 0.0f };
-	float dendriteSomaConnection[3] = { soma->x0 - somaRadius, 0.0f, 0.0f };
+	float somaAxonConnection[3] = { soma->x0 + somaInnerRadius, 0.0f, 0.0f };
+	float dendriteSomaConnection[3] = { soma->x0 - somaInnerRadius, 0.0f, 0.0f };
 
-	soma->addConnection(somaAxonConnection, axonRadius, barrier::SOMA_AXON);
-	soma->addConnection(dendriteSomaConnection, dendriteRadius, barrier::DENDRITE_SOMA);
+	soma->addConnection(somaAxonConnection, axonInnerRadius, barrier::SOMA_AXON);
+	soma->addConnection(dendriteSomaConnection, dendriteInnerRadius, barrier::DENDRITE_SOMA);
 }
 
 void Neuron::setupStructures()
@@ -265,7 +267,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 				float dx, dy, dz, d;
 
 				// coordsIn because its >>> inside layer <<<
-				if (collisionType == collision::INSIDE) {
+				if (collisionType == collision::INSIDE || collisionType == collision::DISC) {
 					dx = currentChannel.xIn - collisionPoint[0];
 					dy = currentChannel.yIn - collisionPoint[1];
 					dz = currentChannel.zIn - collisionPoint[2];
@@ -276,11 +278,13 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 					dy = currentChannel.yOut - collisionPoint[1];
 					dz = currentChannel.zOut - collisionPoint[2];
 				}
+				else
+					dx = dy = dz = 0.0f;
 				d = metricFactor * sqrt(dx * dx + dy * dy + dz * dz);
 
 				// collision point is within channel radius and channel is open
 				if (d < currentChannel.radius) {
-					glm::vec3 channelVec;
+					//glm::vec3 channelVecTemp;
 
 					// particle passed through channel >>> inside layer <<<
 					if (collisionType == collision::INSIDE) {
@@ -288,7 +292,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 						nextParticleState.y = currentChannel.yOut;
 						nextParticleState.z = currentChannel.zOut;
 						// change direction of particle's velocity vector  >>> inside layer <<<
-						channelVec = glm::vec3(currentChannel.xOut - currentChannel.xIn, currentChannel.yOut - currentChannel.yIn, currentChannel.zOut - currentChannel.zIn);
+						//channelVecTemp = glm::vec3(currentChannel.xOut - currentChannel.xIn, currentChannel.yOut - currentChannel.yIn, currentChannel.zOut - currentChannel.zIn);
 					}
 					// particle passed through channel >>> outside layer <<<
 					else if (collisionType == collision::OUTSIDE) {
@@ -296,14 +300,22 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 						nextParticleState.y = currentChannel.yIn;
 						nextParticleState.z = currentChannel.zIn;
 						// change direction of particle's velocity vector  >>> outside layer <<<
-						channelVec = glm::vec3(currentChannel.xIn - currentChannel.xOut, currentChannel.yIn - currentChannel.yOut, currentChannel.zIn - currentChannel.zOut);
+						//channelVecTemp = glm::vec3(currentChannel.xIn - currentChannel.xOut, currentChannel.yIn - currentChannel.yOut, currentChannel.zIn - currentChannel.zOut);
 					}
 
-					channelVec = glm::normalize(channelVec);
-					float v = sqrt(nextParticleState.vx * nextParticleState.vx + nextParticleState.vy * nextParticleState.vy + nextParticleState.vz * nextParticleState.vz);
+					//glm::vec3 channelVec = glm::normalize(channelVecTemp);
+
+					//// TODO detect if channelVec is inf/nan
+					//if (glm::isinf(channelVec[0]) || glm::isinf(channelVec[1]) || glm::isinf(channelVec[2])) {
+					//	std::cout << "\n current channel i = " + std::to_string(i) + " xin = " + std::to_string(currentChannel.xIn) + " yin = " + std::to_string(currentChannel.yIn) + " zin = " + std::to_string(currentChannel.zIn);
+					//	std::cout << "\n current channel i = " + std::to_string(i) + " yout = " + std::to_string(currentChannel.yOut) + " zout = " + std::to_string(currentChannel.zOut);
+					//	std::cout << "\n temp vec x = " + std::to_string(channelVecTemp[0]) + " y = " + std::to_string(channelVecTemp[1]) + " z = " + std::to_string(channelVecTemp[2]);
+					//}
+
+					/*float v = sqrt(nextParticleState.vx * nextParticleState.vx + nextParticleState.vy * nextParticleState.vy + nextParticleState.vz * nextParticleState.vz);
 					oldParticleState.vx = nextParticleState.vx = v * channelVec[0];
 					oldParticleState.vy = nextParticleState.vy = v * channelVec[1];
-					oldParticleState.vz = nextParticleState.vz = v * channelVec[2];
+					oldParticleState.vz = nextParticleState.vz = v * channelVec[2];*/
 
 					// collide with channel
 					return true;
@@ -314,6 +326,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 			glm::vec3 n;
 			barrier->getCollisionNormalVec(collisionPoint, n, collisionType);
 			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
+
 			nextParticleState.x = collisionPoint[0];
 			nextParticleState.y = collisionPoint[1];
 			nextParticleState.z = collisionPoint[2];

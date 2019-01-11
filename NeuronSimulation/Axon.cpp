@@ -39,103 +39,137 @@ void Axon::addCircle(std::vector<FCoord8>& vertices)
 	}
 }
 
+void Axon::addDisc(std::vector<UCoord3>& indices, unsigned midPointIndex)
+{
+	for (unsigned i = 1; i < slices + 1; ++i)
+		indices.push_back(UCoord3({ midPointIndex, i + midPointIndex, i + 1 + midPointIndex }));
+}
+
 Axon::Axon(float coords[3], float _radius, float _length, float _lipidBilayerWidth) :
 	length(_length), slices(30)
 {
+	precision = 0.01f;
 	radius = _radius;
 	lipidBilayerWidth = _lipidBilayerWidth;
+	innerRadius = _radius - _lipidBilayerWidth / 2.0f;
+	outerRadius = _radius + _lipidBilayerWidth / 2.0f;
 
 	x0 = coords[0];
 	y0 = coords[1];
 	z0 = coords[2];
 
-	startCoords[0] = coords[0] - _length / 2.0f;
+	startCoords[0] = coords[0] - _length / 2.0f - _lipidBilayerWidth / 2.0f;
 	startCoords[1] = coords[1];
 	startCoords[2] = coords[2];
 
-	stopCoords[0] = coords[0] + _length / 2.0f;
+	stopCoords[0] = coords[0] + _length / 2.0f + _lipidBilayerWidth / 2.0f;
 	stopCoords[1] = coords[1];
 	stopCoords[2] = coords[2];
 
+	discPoint[0] = x0 + _length / 2.0f - _lipidBilayerWidth / 2.0f;
+	discPoint[1] = y0;
+	discPoint[2] = z0;
+
 	// add inner layer
-	radius -= lipidBilayerWidth / 2.0f;
+	length -= _lipidBilayerWidth;
+	radius = innerRadius;
 	addCircle(innerLayerVertices);
 	addCircle(innerLayerVertices);
+	addDisc(innerLayerIndices, slices + 2);
 	innerLayerVAO = generateLayer(innerLayerVertices, innerLayerIndices);
 
 	// add outer layer
-	radius += lipidBilayerWidth;
+	length += 2.0f * _lipidBilayerWidth;
+	radius = outerRadius;
 	addCircle(outerLayerVertices);
 	addCircle(outerLayerVertices);
+	addDisc(outerLayerIndices, slices + 2);
 	outerLayerVAO = generateLayer(outerLayerVertices, outerLayerIndices);
 
+	length = _length;
 	radius = _radius;
 }
 
 collision::Type Axon::checkCollision(const float newCoords[3], const float oldCoords[3]) const
 {
 	// not in barrier length
-	if (!(newCoords[0] < stopCoords[0] && newCoords[0] > startCoords[0] &&
-		oldCoords[0] < stopCoords[0] && oldCoords[0] > startCoords[0]))
+	if (oldCoords[0] < startCoords[0] && newCoords[0] < startCoords[0] ||
+		oldCoords[0] > stopCoords[0] && newCoords[0] > stopCoords[0])
 		return collision::NONE;
 
 	float oldD = getPointLineDistance(oldCoords, startCoords, stopCoords);
 	float newD = getPointLineDistance(newCoords, startCoords, stopCoords);
-	float halfLipidBilayerWidth = lipidBilayerWidth / 2.0f;
 
-	if (oldD < radius - halfLipidBilayerWidth && newD >= radius - halfLipidBilayerWidth)
+	if (oldD < innerRadius && newD > innerRadius)
 		return collision::INSIDE;
-	if (newD <= radius + halfLipidBilayerWidth && oldD > radius + halfLipidBilayerWidth)
+	if (newD < outerRadius && oldD > outerRadius)
 		return collision::OUTSIDE;
+	if (oldD < innerRadius &&
+		newD < innerRadius &&
+		oldCoords[0] < stopCoords[0] - lipidBilayerWidth && 
+		newCoords[0] > stopCoords[0] - lipidBilayerWidth)
+		return collision::DISC;
 
 	// TODO better inside bilayer collision
-	if (oldD < radius + halfLipidBilayerWidth && newD > radius - halfLipidBilayerWidth)
+	if (oldD < radius && newD > radius)
 		return collision::INSIDE;
 
 	return collision::NONE;
 }
 
-bool Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const
+int Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3], collision::Type collisionType) const
 {
-	float precision = 0.001f;
-	float barrierRadius;
-	if (collisionType == collision::INSIDE)
-		barrierRadius = radius - lipidBilayerWidth / 2.0f;
-	else if (collisionType == collision::OUTSIDE)
-		barrierRadius = radius + lipidBilayerWidth / 2.0f;
-	else
-		return false;
-
 	glm::vec3 currPoint = glm::vec3(oldCoords[0], oldCoords[1], oldCoords[2]);
 	glm::vec3 dVec = glm::vec3(newCoords[0], newCoords[1], newCoords[2]) - currPoint;
 	dVec *= precision;
-	int iterations = 1.0f / precision;
+	int iterations = 1 / precision;
 
-	for (int i = 0; i < iterations; ++i, currPoint += dVec) {
-		float d = getPointLineDistance(&currPoint[0], startCoords, stopCoords);
-		if (fabs(d - barrierRadius) < precision) {
-			point[0] = currPoint[0];
-			point[1] = currPoint[1];
-			point[2] = currPoint[2];
-			return true;
+	if (collisionType == collision::INSIDE) {
+		for (int i = 0; i < iterations; ++i, currPoint += dVec) {
+			float d = getPointLineDistance(&currPoint[0], startCoords, stopCoords);
+			if (fabs(d - innerRadius) < precision) {
+				point[0] = currPoint[0];
+				point[1] = currPoint[1];
+				point[2] = currPoint[2];
+				return i;
+			}
 		}
 	}
+	else if (collisionType == collision::OUTSIDE) {
+		for (int i = 0; i < iterations; ++i, currPoint += dVec) {
+			float d = getPointLineDistance(&currPoint[0], startCoords, stopCoords);
+			if (fabs(d - outerRadius) < precision) {
+				point[0] = currPoint[0];
+				point[1] = currPoint[1];
+				point[2] = currPoint[2];
+				return i;
+			}
+		}
+	}
+	else if (collisionType == collision::DISC) {
+		point[0] = discPoint[0];
+		point[1] = newCoords[1];
+		point[2] = newCoords[2];
+		return -3;
+	}
+	else
+		return -2;
 
 	point[0] = (newCoords[0] - oldCoords[0]) / 2.0f;
 	point[1] = (newCoords[1] - oldCoords[1]) / 2.0f;
 	point[2] = (newCoords[2] - oldCoords[2]) / 2.0f;
-	return false;
+	return -1;
 }
 
 bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const
 {
-	float midPoint[3] = { x0, y0, z0 };
-	float h = getPointOnLineDistanceFromCenter(collisionPoint, midPoint, radius);
-	if (collisionPoint[0] <= x0)
-		n = glm::normalize(glm::vec3(x0 - h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
-	else
-		n = glm::normalize(glm::vec3(x0 + h - collisionPoint[0], collisionPoint[1], collisionPoint[2]));
-	
+	if (collisionType == collision::DISC) {
+		n = glm::vec3(-1.0f, 0.0f, 0.0f);
+		return true;
+	}
+
+	n = glm::normalize(glm::vec3(0.0f, collisionPoint[1], collisionPoint[2]));
+
 	if (collisionType == collision::OUTSIDE)
 		n *= -1.0f;
 	return true;
@@ -147,8 +181,8 @@ bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 	float x = getRandDouble(startCoords[0], stopCoords[0]);
 	float angle = getRandDouble(0.0, 2 * phy::pi);
 	point[0] = x;
-	point[1] = (radius - lipidBilayerWidth / 2.0f) * sin(angle);
-	point[2] = (radius - lipidBilayerWidth / 2.0f) * cos(angle);
+	point[1] = innerRadius * sin(angle);
+	point[2] = innerRadius * cos(angle);
 
 	inOutVec = glm::normalize(glm::vec3(point[0] - x, point[1] - y0, point[2] - z0));
 	return true;

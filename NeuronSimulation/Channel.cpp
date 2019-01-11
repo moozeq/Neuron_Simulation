@@ -1,5 +1,6 @@
 #include "Channel.h"
 
+// need for vector.resize()
 Channel::Channel()
 {
 }
