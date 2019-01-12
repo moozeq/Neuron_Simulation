@@ -19,10 +19,13 @@ struct Config
 	size_t ClmIonsNum;
 	size_t otherParticlesNum;
 
+	size_t maxNeurotransmittersNum;
+
 	std::string NapIonTexturePath;
 	std::string KpIonTexturePath;
 	std::string ClmIonTexturePath;
 	std::string otherParticlesTexturePath;
+	std::string neurotransmittersTexturePath;
 
 	// channels
 	double NapIonsChannelsDensity[barrier::DENSITY_TYPES_COUNT];

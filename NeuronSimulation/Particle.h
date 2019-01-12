@@ -18,16 +18,7 @@ To add new particle:
 namespace particle {
 	// must be in same order as in channels namespace
 	enum Type {
-		NONE = -1, NAP, KP, CLM, MASSIVEION, TYPES_COUNT
-	};
-}
-
-namespace collision {
-	enum Axis {
-		X, Y, Z
-	};
-	enum Direction {
-		NEG_X = 1, POS_X = 2, NEG_Y = 4, POS_Y = 8, NEG_Z = 16, POS_Z = 32
+		NONE = -1, NAP, KP, CLM, ORGANIC_ANION, NEUROTRANSMITTER, TYPES_COUNT
 	};
 }
 

@@ -25,8 +25,8 @@ class Neuron
 	unsigned NapChannelsCount[barrier::TYPES_COUNT];
 	unsigned KpChannelsCount[barrier::TYPES_COUNT];
 
-	unsigned AllNapChannelsCount;
-	unsigned AllKpChannelsCount;
+	unsigned allNapChannelsCount;
+	unsigned allKpChannelsCount;
 
 	float addBarrier(float x, float y, float z, float radius, float length, barrier::Type barrierType);
 
@@ -45,4 +45,5 @@ public:
 	void render(shader::Uniforms uniforms) const;
 	std::vector<float> getChannels();
 	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const;
+	float* getSynapsePosition();
 };

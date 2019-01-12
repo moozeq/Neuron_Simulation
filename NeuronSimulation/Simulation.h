@@ -29,6 +29,8 @@ class Simulation
 	shader::Uniforms uniforms;
 	bool ice;
 	bool rewind;
+	bool renderParticles;
+	bool renderChannels;
 	double currentFrame;
 	double lastFrame;
 	double deltaTime;
@@ -46,19 +48,24 @@ class Simulation
 	GLuint KpIonsVAO;
 	GLuint ClmIonsVAO;
 	GLuint otherParticlesVAO;
+	GLuint neurotransmittersVAO;
 
 	// particles textures
 	GLuint NapIonTexture;
 	GLuint KpIonTexture;
 	GLuint ClmIonTexture;
 	GLuint otherParticlesTexture;
+	GLuint neurotransmittersTexture;
 
 	// particles structs
 	std::vector<Particle> particles[2];
 	std::vector<double> partAccOrigin;
 	float particleRadius[particle::TYPES_COUNT];
 	long particlesBufferSize;
+	long activeParticlesCount;
 	float* particlesPos;
+	float* synapsePosition;
+	long neurotransmittersCount;
 
 /* -----------------CHANNELS----------------- */
 

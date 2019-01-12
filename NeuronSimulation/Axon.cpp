@@ -108,7 +108,12 @@ collision::Type Axon::checkCollision(const float newCoords[3], const float oldCo
 		newD < innerRadius &&
 		oldCoords[0] < stopCoords[0] - lipidBilayerWidth && 
 		newCoords[0] > stopCoords[0] - lipidBilayerWidth)
-		return collision::DISC;
+		return collision::DISC_INSIDE;
+	if (oldD < innerRadius &&
+		newD < innerRadius &&
+		oldCoords[0] > stopCoords[0] &&
+		newCoords[0] < stopCoords[0])
+		return collision::DISC_OUTSIDE;
 
 	// TODO better inside bilayer collision
 	if (oldD < radius && newD > radius)
@@ -146,11 +151,17 @@ int Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3]
 			}
 		}
 	}
-	else if (collisionType == collision::DISC) {
+	else if (collisionType == collision::DISC_INSIDE) {
 		point[0] = discPoint[0];
 		point[1] = newCoords[1];
 		point[2] = newCoords[2];
 		return -3;
+	}
+	else if (collisionType == collision::DISC_OUTSIDE) {
+		point[0] = stopCoords[0];
+		point[1] = newCoords[1];
+		point[2] = newCoords[2];
+		return -4;
 	}
 	else
 		return -2;
@@ -163,15 +174,17 @@ int Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3]
 
 bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const
 {
-	if (collisionType == collision::DISC) {
+	if (collisionType == collision::DISC_INSIDE)
 		n = glm::vec3(-1.0f, 0.0f, 0.0f);
-		return true;
-	}
+	else if (collisionType == collision::DISC_OUTSIDE)
+		n = glm::vec3(1.0f, 0.0f, 0.0f);
+	else if (collisionType == collision::INSIDE)
+		n = glm::normalize(glm::vec3(0.0f, collisionPoint[1], collisionPoint[2]));
+	else if (collisionType == collision::OUTSIDE)
+		n = glm::normalize(glm::vec3(0.0f, -collisionPoint[1], -collisionPoint[2]));
+	else
+		n = glm::vec3(-1.0f, 0.0f, 0.0f);
 
-	n = glm::normalize(glm::vec3(0.0f, collisionPoint[1], collisionPoint[2]));
-
-	if (collisionType == collision::OUTSIDE)
-		n *= -1.0f;
 	return true;
 }
 

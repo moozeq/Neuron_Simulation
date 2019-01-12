@@ -150,22 +150,22 @@ void Neuron::setupChannelsIndexes()
 	barriers[0]->NapChannelsIndexFrom = 0;
 	barriers[0]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA];
 
-	barriers[0]->KpChannelsIndexFrom = AllNapChannelsCount;
-	barriers[0]->KpChannelsIndexTo = AllNapChannelsCount + KpChannelsCount[barrier::SOMA];
+	barriers[0]->KpChannelsIndexFrom = allNapChannelsCount;
+	barriers[0]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA];
 
 	// axon
 	barriers[1]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA];
 	barriers[1]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
 
-	barriers[1]->KpChannelsIndexFrom = AllNapChannelsCount + KpChannelsCount[barrier::SOMA];
-	barriers[1]->KpChannelsIndexTo = AllNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
+	barriers[1]->KpChannelsIndexFrom = allNapChannelsCount + KpChannelsCount[barrier::SOMA];
+	barriers[1]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
 
 	// dendrite
 	barriers[2]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
 	barriers[2]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON] + NapChannelsCount[barrier::DENDRITE];
 
-	barriers[2]->KpChannelsIndexFrom = AllNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
-	barriers[2]->KpChannelsIndexTo = AllNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON] + KpChannelsCount[barrier::DENDRITE];
+	barriers[2]->KpChannelsIndexFrom = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
+	barriers[2]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON] + KpChannelsCount[barrier::DENDRITE];
 
 }
 
@@ -191,22 +191,22 @@ void Neuron::setupStructures()
 	setupDendrites();
 
 	for (int i = 0; i < barrier::TYPES_COUNT; ++i) {
-		AllNapChannelsCount += NapChannelsCount[i];
-		AllKpChannelsCount += KpChannelsCount[i];
+		allNapChannelsCount += NapChannelsCount[i];
+		allKpChannelsCount += KpChannelsCount[i];
 	}
 
 	setupChannelsIndexes();
 	setupConnections();
 
 	// distribute channels on barriers
-	channels.resize(AllNapChannelsCount + AllKpChannelsCount);
+	channels.resize(allNapChannelsCount + allKpChannelsCount);
 	for (unsigned i = 0; i < barriers.size(); ++i)
 		setupChannels(i);
 }
 
 Neuron::Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity[barrier::DENSITY_TYPES_COUNT], double _KpChannelsDensity[barrier::DENSITY_TYPES_COUNT]) :
 	metricFactor(_metricFactor), timeFactor(_timeFactor),
-	AllNapChannelsCount(0), AllKpChannelsCount(0)
+	allNapChannelsCount(0), allKpChannelsCount(0)
 {
 	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
 	for (int i = 0; i < barrier::DENSITY_TYPES_COUNT; ++i) {
@@ -265,14 +265,18 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 
 			// checking only channels with proper type
 			unsigned channelsIndexFrom, channelsIndexTo;
-			if (type == particle::NAP) {
+
+			// Nap and neurotransmitters can only get to cell from outside
+			if ((type == particle::NAP || type == particle::NEUROTRANSMITTER) && (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE)) {
 				channelsIndexFrom = barrier->NapChannelsIndexFrom;
 				channelsIndexTo = barrier->NapChannelsIndexTo;
 			}
+			// Kp can travel through lipid bilayer in both directions
 			else if (type == particle::KP) {
 				channelsIndexFrom = barrier->KpChannelsIndexFrom;
 				channelsIndexTo = barrier->KpChannelsIndexTo;
 			}
+			// other cases - simple reflection, no channels involved
 			else
 				channelsIndexFrom = channelsIndexTo = 0;
 
@@ -287,13 +291,13 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 				float dx, dy, dz, d;
 
 				// coordsIn because its >>> inside layer <<<
-				if (collisionType == collision::INSIDE || collisionType == collision::DISC) {
+				if (collisionType == collision::INSIDE || collisionType == collision::DISC_INSIDE) {
 					dx = currentChannel.xIn - collisionPoint[0];
 					dy = currentChannel.yIn - collisionPoint[1];
 					dz = currentChannel.zIn - collisionPoint[2];
 				}
 				// coordsIn because its >>> outside layer <<<
-				else if (collisionType == collision::OUTSIDE) {
+				else if (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE) {
 					dx = currentChannel.xOut - collisionPoint[0];
 					dy = currentChannel.yOut - collisionPoint[1];
 					dz = currentChannel.zOut - collisionPoint[2];
@@ -307,7 +311,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 					//glm::vec3 channelVecTemp;
 
 					// particle passed through channel >>> inside layer <<<
-					if (collisionType == collision::INSIDE) {
+					if (collisionType == collision::INSIDE || collisionType == collision::DISC_INSIDE) {
 						nextParticleState.x = currentChannel.xOut;
 						nextParticleState.y = currentChannel.yOut;
 						nextParticleState.z = currentChannel.zOut;
@@ -315,7 +319,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 						//channelVecTemp = glm::vec3(currentChannel.xOut - currentChannel.xIn, currentChannel.yOut - currentChannel.yIn, currentChannel.zOut - currentChannel.zIn);
 					}
 					// particle passed through channel >>> outside layer <<<
-					else if (collisionType == collision::OUTSIDE) {
+					else if (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE) {
 						nextParticleState.x = currentChannel.xIn;
 						nextParticleState.y = currentChannel.yIn;
 						nextParticleState.z = currentChannel.zIn;
@@ -360,4 +364,12 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 	}
 
 	return false;
+}
+
+float* Neuron::getSynapsePosition()
+{
+	float* position;
+	Dendrite* dendrite = static_cast<Dendrite*>(barriers[2]);
+	position = dendrite->getSynapsePoint();
+	return position;
 }

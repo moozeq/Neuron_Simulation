@@ -39,18 +39,18 @@ namespace phy {
 	constexpr double pi = 3.14159265359;
 
 	// >>>>>> CHANGEME <<<<<< no scale
-	constexpr double tempIonScale = 50;
-	// >>>>>> CHANGEME <<<<<< no scale
-	constexpr double tempChannelTimeScale = 1e-4;
+	constexpr double tempIonScale = 10;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 
 	constexpr double NapOpenTreshold = -40e-3;
-	constexpr double NapOpenTime = 1e-3 * tempChannelTimeScale;
-	constexpr double NapInactiveTime = 1e-3 * tempChannelTimeScale;
+	constexpr double NapRepolarizationTreshold = -10e-3;
+	constexpr double NapOpenTime = 1e-3;
 
-	// >>>>>> CHANGEME <<<<<< set proper Kp channel open treshold
-	constexpr double KpOpenTreshold = 100e-3;
+	constexpr double NtrR = 1.16 * A * tempIonScale;
+	constexpr double NtrM = 38.1754326758e-27;
+	constexpr double NtrC = +1.0 * e;
+	constexpr double NtrA = k * NtrC / NtrM;
 
 	constexpr double NapR = 1.16 * A * tempIonScale;
 	constexpr double NapM = 38.1754326758e-27;
@@ -67,10 +67,10 @@ namespace phy {
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;
 
-	constexpr double MIR = 10 * A;
-	constexpr double MIM = 1e-24;
-	constexpr double MIC = -1000.0 * e;
-	constexpr double MIA = k * MIC / MIM;
+	constexpr double OanR = 2 * A * tempIonScale;
+	constexpr double OanM = 1000e-27;
+	constexpr double OanC = -1.0 * e;
+	constexpr double OanA = k * OanC / OanM;
 
 	constexpr double NapChR = 20 * A;
 	constexpr double KpChR = 34 * A;
@@ -144,6 +144,7 @@ static Particle* newParticle(float x, float y, float z, particle::Type type) {
 	particle->z = z;
 
 	switch (type) {
+	case particle::NEUROTRANSMITTER:
 	case particle::NAP:
 		particle->charge = phy::NapC;
 		particle->mass = phy::NapM;
@@ -159,9 +160,9 @@ static Particle* newParticle(float x, float y, float z, particle::Type type) {
 		particle->mass = phy::ClmM;
 		break;
 
-	case particle::MASSIVEION:
-		particle->charge = phy::MIC;
-		particle->mass = phy::MIM;
+	case particle::ORGANIC_ANION:
+		particle->charge = phy::OanC;
+		particle->mass = phy::OanM;
 		break;
 
 	default:
@@ -173,16 +174,17 @@ static Particle* newParticle(float x, float y, float z, particle::Type type) {
 	return particle;
 }
 
-static Particle* newParticle(double boundaries, particle::Type type) {
+static Particle* newParticle(float coords[3], float velocities[3], particle::Type type) {
 	Particle* particle = new Particle();
-	particle->vx = 0.0;
-	particle->vy = 0.0;
-	particle->vz = 0.0;
-	particle->x = getRandDouble(-boundaries, boundaries);
-	particle->y = getRandDouble(-boundaries, boundaries);
-	particle->z = getRandDouble(-boundaries, boundaries);
+	particle->vx = velocities[0];
+	particle->vy = velocities[1];
+	particle->vz = velocities[2];
+	particle->x = coords[0];
+	particle->y = coords[1];
+	particle->z = coords[2];
 
 	switch (type) {
+	case particle::NEUROTRANSMITTER:
 	case particle::NAP:
 		particle->charge = phy::NapC;
 		particle->mass = phy::NapM;
@@ -198,9 +200,49 @@ static Particle* newParticle(double boundaries, particle::Type type) {
 		particle->mass = phy::ClmM;
 		break;
 
-	case particle::MASSIVEION:
-		particle->charge = phy::MIC;
-		particle->mass = phy::MIM;
+	case particle::ORGANIC_ANION:
+		particle->charge = phy::OanC;
+		particle->mass = phy::OanM;
+		break;
+
+	default:
+		particle->charge = 0.0;
+		particle->mass = phy::u1;
+		break;
+	}
+
+	return particle;
+}
+
+static Particle* newParticle(double boundaries[3][2], particle::Type type) {
+	Particle* particle = new Particle();
+	particle->vx = 0.0;
+	particle->vy = 0.0;
+	particle->vz = 0.0;
+	particle->x = getRandDouble(boundaries[0][0], boundaries[0][1]);
+	particle->y = getRandDouble(boundaries[1][0], boundaries[1][1]);
+	particle->z = getRandDouble(boundaries[2][0], boundaries[2][1]);
+
+	switch (type) {
+	case particle::NEUROTRANSMITTER:
+	case particle::NAP:
+		particle->charge = phy::NapC;
+		particle->mass = phy::NapM;
+		break;
+
+	case particle::KP:
+		particle->charge = phy::KpC;
+		particle->mass = phy::KpM;
+		break;
+
+	case particle::CLM:
+		particle->charge = phy::ClmC;
+		particle->mass = phy::ClmM;
+		break;
+
+	case particle::ORGANIC_ANION:
+		particle->charge = phy::OanC;
+		particle->mass = phy::OanM;
 		break;
 
 	default:

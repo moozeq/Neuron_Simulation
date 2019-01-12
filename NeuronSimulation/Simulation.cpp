@@ -11,10 +11,14 @@ void Simulation::loadConfig(const Config& _config)
 	timeFactor = config.timeFactor;
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
-	particlesBufferSize = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
+	particlesBufferSize = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum + config.maxNeurotransmittersNum;
+	activeParticlesCount = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
 	bufferNum = 0;
+	neurotransmittersCount = 0;
 	ice = false;
 	rewind = false;
+	renderParticles = true;
+	renderChannels = true;
 }
 
 void Simulation::setupOpenGL()
@@ -99,8 +103,9 @@ void Simulation::setupNeuronStructures()
 {
 	neuron = new Neuron(metricFactor, timeFactor, config.NapIonsChannelsDensity, config.KpIonsChannelsDensity);
 	channelsBufferSize = neuron->channels.size();
-	NapChannelsCount = neuron->AllNapChannelsCount;
-	KpChannelsCount = neuron->AllKpChannelsCount;
+	NapChannelsCount = neuron->allNapChannelsCount;
+	KpChannelsCount = neuron->allKpChannelsCount;
+	synapsePosition = neuron->getSynapsePosition();
 }
 
 void Simulation::setupParticlesStructures()
@@ -110,7 +115,7 @@ void Simulation::setupParticlesStructures()
 	partAccOrigin.reserve(particlesBufferSize);
 	size_t i = 0;
 	size_t offset = 0;
-	float boundaries = 0.02f;
+	double boundaries[3][2] = { { -1.2f, 5.0f }, { -0.05f, 0.05f }, { -0.05f, 0.05f } };
 
 	offset += config.NapIonsNum;
 	while (i < offset) {
@@ -144,7 +149,20 @@ void Simulation::setupParticlesStructures()
 
 	offset += config.otherParticlesNum;
 	while (i < offset) {
-		Particle* particle = newParticle(boundaries, particle::MASSIVEION);
+		Particle* particle = newParticle(boundaries, particle::ORGANIC_ANION);
+		particles[0].push_back(*particle);
+		particles[1].push_back(*particle);
+		partAccOrigin.push_back((phy::k * particle->charge / particle->mass) / metricFactorSq);
+		delete particle;
+		++i;
+	}
+
+	offset += config.maxNeurotransmittersNum;
+	while (i < offset) {
+		float offset[3] = { getRandDouble(-0.05, 0.05), getRandDouble(-0.05, 0.05), getRandDouble(-0.05, 0.05) };
+		float coords[3] = { synapsePosition[0] + offset[0] + 0.2f, synapsePosition[1] + offset[1], synapsePosition[2] + offset[2] };
+		float velocities[3] = { 10000.0f, 0.0f, 0.0f };
+		Particle* particle = newParticle(coords, velocities, particle::NEUROTRANSMITTER);
 		particles[0].push_back(*particle);
 		particles[1].push_back(*particle);
 		partAccOrigin.push_back((phy::k * particle->charge / particle->mass) / metricFactorSq);
@@ -158,14 +176,15 @@ void Simulation::setupUniforms()
 	particleRadius[particle::NAP] = phy::NapR / metricFactor;
 	particleRadius[particle::KP] = phy::KpR / metricFactor;
 	particleRadius[particle::CLM] = phy::ClmR / metricFactor;
-	particleRadius[particle::MASSIVEION] = phy::MIR / metricFactor;
+	particleRadius[particle::ORGANIC_ANION] = phy::OanR / metricFactor;
+	particleRadius[particle::NEUROTRANSMITTER] = phy::NtrR / metricFactor;
 
 	channelRadius[channel::NAP] = phy::NapChR / metricFactor;
 	channelRadius[channel::KP] = phy::KpChR / metricFactor;
 
 	// set const values as uniforms in shader program
 	uniforms.channelWidth = phy::lipidBilayerWidth / metricFactor;
-	uniforms.opacity = 0.5f;
+	uniforms.opacity = 0.25f;
 
 	channelsRenderProgram->use();
 	channelsRenderProgram->setUniforms(uniforms);
@@ -179,6 +198,7 @@ void Simulation::setupTextures()
 	KpIonTexture = loadMipmapTexture(GL_TEXTURE0, config.KpIonTexturePath.c_str());
 	ClmIonTexture = loadMipmapTexture(GL_TEXTURE0, config.ClmIonTexturePath.c_str());
 	otherParticlesTexture = loadMipmapTexture(GL_TEXTURE0, config.otherParticlesTexturePath.c_str());
+	neurotransmittersTexture = loadMipmapTexture(GL_TEXTURE0, config.neurotransmittersTexturePath.c_str());
 
 	// load channels textures
 	NapIonChannelTexture = loadMipmapTexture(GL_TEXTURE0, config.NapChannelTexturePath.c_str());
@@ -203,6 +223,7 @@ void Simulation::setupParticlesBuffers()
 	glCreateVertexArrays(1, &KpIonsVAO);
 	glCreateVertexArrays(1, &ClmIonsVAO);
 	glCreateVertexArrays(1, &otherParticlesVAO);
+	glCreateVertexArrays(1, &neurotransmittersVAO);
 
 	// creating buffers
 	glCreateBuffers(1, &particlesPosBuf);
@@ -230,6 +251,11 @@ void Simulation::setupParticlesBuffers()
 	glVertexArrayAttribFormat(otherParticlesVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
 	glVertexArrayAttribBinding(otherParticlesVAO, 0, 0);
 	glEnableVertexArrayAttrib(otherParticlesVAO, 0);
+
+	glVertexArrayVertexBuffer(neurotransmittersVAO, 0, particlesPosBuf, 0, 3 * sizeof(GLfloat));
+	glVertexArrayAttribFormat(neurotransmittersVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
+	glVertexArrayAttribBinding(neurotransmittersVAO, 0, 0);
+	glEnableVertexArrayAttrib(neurotransmittersVAO, 0);
 
 	// initialize buffers in GPU and get pointers to them
 	particlesPos = (float*)glMapNamedBuffer(particlesPosBuf, GL_WRITE_ONLY);
@@ -275,6 +301,23 @@ void Simulation::setupChannelsBuffers()
 		throw std::exception("Buffer mapping failed");
 
 	glUnmapNamedBuffer(channelsBuf);
+
+	for (long i = 0; i < neuron->channels.size(); ++i) {
+		const Channel& channel = neuron->channels[i];
+		float color;
+		switch (channel.state) {
+		case channel::OPEN:
+			color = 0.0f;
+			break;
+		case channel::INACTIVE:
+			color = 0.5f;
+			break;
+		case channel::CLOSED:
+			color = 1.0f;
+			break;
+		}
+		channelsAttribs[i * 4 + 3] = color;
+	}
 }
 
 void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
@@ -309,18 +352,48 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		log(simulation->logfile, "[-] Camera movement speed = " + std::to_string(simulation->camera.movementSpeed));
 	}
 
-	// O - opacity -0.1
+	// O - opacity -0.05
 	if (key == GLFW_KEY_O && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-		if (simulation->uniforms.opacity > 0.1f)
-			simulation->uniforms.opacity -= 0.1f;
+		if (simulation->uniforms.opacity > 0.05f)
+			simulation->uniforms.opacity -= 0.05f;
 		log(simulation->logfile, "[-] Lipid bilayer opacity changed, opacity = " + std::to_string(simulation->uniforms.opacity));
 	}
 
-	// P - opacity +0.1
+	// P - opacity +0.05
 	if (key == GLFW_KEY_P && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		if (simulation->uniforms.opacity < 1.0f)
-			simulation->uniforms.opacity += 0.1f;
+			simulation->uniforms.opacity += 0.05f;
 		log(simulation->logfile, "[+] Lipid bilayer opacity changed, opacity = " + std::to_string(simulation->uniforms.opacity));
+	}
+	
+	// 1 - increase neurotransmitters count
+	if (key == GLFW_KEY_1 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		if (simulation->neurotransmittersCount < simulation->config.maxNeurotransmittersNum - 100) {
+			simulation->neurotransmittersCount += 100;
+			simulation->activeParticlesCount += 100;
+		}
+		log(simulation->logfile, "[+] Neurotransmitters count increased = " + std::to_string(simulation->neurotransmittersCount));
+	}
+	
+	// 2 - decrease neurotransmitters count
+	if (key == GLFW_KEY_2 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		if (simulation->neurotransmittersCount >= 100) {
+			simulation->neurotransmittersCount -= 100;
+			simulation->activeParticlesCount -= 100;
+		}
+		log(simulation->logfile, "[-] Neurotransmitters count decreased = " + std::to_string(simulation->neurotransmittersCount));
+	}
+
+	// N - turn on/off rendering particles
+	if (key == GLFW_KEY_N && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		simulation->renderParticles = !simulation->renderParticles;
+		log(simulation->logfile, "[*] Rendering particles = " + std::to_string(simulation->renderParticles));
+	}
+	
+	// M - turn on/off rendering channels
+	if (key == GLFW_KEY_M && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		simulation->renderChannels = !simulation->renderChannels;
+		log(simulation->logfile, "[*] Rendering channels = " + std::to_string(simulation->renderChannels));
 	}
 
 	// TODO lock current simulation state before changing timeFactor
@@ -421,6 +494,7 @@ bool Simulation::updateFramebufferSize(int width, int height)
 inline void Simulation::updateChannelsStates()
 {
 	const long channelsBufferSizeInLoop = channelsBufferSize;
+	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum;
 
 	// parallelization can be done due to no influence from other channels
 #pragma loop(hint_parallel(0))
@@ -435,7 +509,7 @@ inline void Simulation::updateChannelsStates()
 		float U = 0.0f;
 
 		// calc voltage inside neuron
-		for (long j = 0; j < particlesBufferSize; ++j) {
+		for (long j = 0; j < activeParticlesCount; ++j) {
 			particle = &particles[bufferNum][j];
 
 			dx = particle->x - currChannel.xIn;
@@ -450,7 +524,7 @@ inline void Simulation::updateChannelsStates()
 		}
 
 		// calc voltage ouside neuron
-		for (long j = 0; j < particlesBufferSize; ++j) {
+		for (long j = neurotransmittersOffset; j < activeParticlesCount; ++j) {
 			particle = &particles[bufferNum][j];
 
 			dx = particle->x - currChannel.xOut;
@@ -464,17 +538,11 @@ inline void Simulation::updateChannelsStates()
 			Eout += phy::k * particle->charge / (metricFactor * d);
 		}
 
-		currChannel.U = U = Ein - Eout;
+		currChannel.U = U = Eout - Ein;
 
 		// TODO probability to open instead of threshold (hidden markov model)
 		// TODO add relative refraction 
-		// TODO refactor, delete logs
 		// TODO channels open/close/inactive when deltaTime < 0
-
-		/*if (i == 0 || fabs(currChannel.xIn - 5.0f) < 0.01f) {
-			std::cout << "\nChannel [" + std::to_string(i) + "] U = " + std::to_string(U) + " state = " + std::to_string(currChannel.state);
-			std::cout << "\tx = " + std::to_string(currChannel.xIn) + "\ty = " + std::to_string(currChannel.yIn) + "\tz = " + std::to_string(currChannel.zIn);
-		}*/
 
 		if (currChannel.type == channel::NAP) {
 			if (currChannel.state == channel::CLOSED) {
@@ -488,35 +556,45 @@ inline void Simulation::updateChannelsStates()
 				currChannel.timeLeft -= fabs(deltaTime);
 				if (currChannel.timeLeft < 0.0f) {
 					currChannel.state = channel::INACTIVE;
-					currChannel.timeLeft = phy::NapInactiveTime;
 					channelsAttribs[i * 4 + 3] = 0.5f;
 				}
 			}
 			else if (currChannel.state == channel::INACTIVE) {
-				currChannel.timeLeft -= fabs(deltaTime);
-				if (currChannel.timeLeft < 0.0f) {
+				if (U < phy::NapRepolarizationTreshold) {
 					currChannel.state = channel::CLOSED;
 					channelsAttribs[i * 4 + 3] = 1.0f;
 				}
 			}
 		}
 		else if (currChannel.type == channel::KP) {
-			if (U > phy::KpOpenTreshold) {
+			currChannel.state = channel::OPEN;
+			channelsAttribs[i * 4 + 3] = 0.0f;
+
+			/*if (U > phy::KpOpenTreshold) {
 				currChannel.state = channel::OPEN;
 				channelsAttribs[i * 4 + 3] = 0.0f;
 			}
 			else {
 				currChannel.state = channel::CLOSED;
 				channelsAttribs[i * 4 + 3] = 1.0f;
-			}
+			}*/
 		}
 	}
+
+
+	//Channel& currChannel = neuron->channels[neuron->allNapChannelsCount + 100];
+	//std::cout << "\nChannel [" + std::to_string(neuron->allNapChannelsCount + 100) + "] U = " + std::to_string(currChannel.U * 1000) + "mV, state = " + std::to_string(currChannel.state);
+	//std::cout << "\tx = " + std::to_string(currChannel.xIn) + "\ty = " + std::to_string(currChannel.yIn) + "\tz = " + std::to_string(currChannel.zIn);
+
+	//Channel& currChannel2 = neuron->channels[0];
+	//std::cout << "\nChannel [" + std::to_string(0) + "] U = " + std::to_string(currChannel2.U * 1000) + "mV, state = " + std::to_string(currChannel2.state);
+	//std::cout << "\tx = " + std::to_string(currChannel2.xIn) + "\ty = " + std::to_string(currChannel2.yIn) + "\tz = " + std::to_string(currChannel2.zIn);
 }
 
 inline void Simulation::calculateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long particlesBufferSizeInLoop = particlesBufferSize;
+	const long particlesBufferSizeInLoop = activeParticlesCount;
 	
 	// parallelization can be done due to double buffering particles vector
 #pragma loop(hint_parallel(0))
@@ -556,7 +634,7 @@ inline void Simulation::calculateParticlesPositions()
 		}
 
 		// calculate forces from particles current + 1 to last
-		for (long j = i + 1; j < particlesBufferSize; ++j) {
+		for (long j = i + 1; j < particlesBufferSizeInLoop; ++j) {
 			particle = &particles[nextBufferNum][j];
 
 			dx = particle->x - currParticle.x;
@@ -598,7 +676,15 @@ inline void Simulation::calculateParticlesPositions()
 inline void Simulation::calculateCollisions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long particlesBufferSizeInLoop = particlesBufferSize;
+	const long particlesBufferSizeInLoop = activeParticlesCount;
+	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum;
+	const long offsets[particle::TYPES_COUNT] = {
+		config.NapIonsNum,
+		config.NapIonsNum + config.KpIonsNum,
+		config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum,
+		config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum,
+		config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum + config.maxNeurotransmittersNum
+	};
 
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
@@ -607,19 +693,23 @@ inline void Simulation::calculateCollisions()
 		Particle& prevParticle = particles[nextBufferNum][i];
 
 		// check if collide with lipid bilayer and if, then check if bounced or pass through channel
-		if (i >= 0 && i < config.NapIonsNum)
+		if (i >= 0 && i < offsets[particle::NAP])
 			neuron->checkCollision(currParticle, prevParticle, particle::NAP);
-		else if (i >= config.NapIonsNum && i < config.NapIonsNum + config.KpIonsNum)
+		else if (i >= offsets[particle::NAP] && i < offsets[particle::KP])
 			neuron->checkCollision(currParticle, prevParticle, particle::KP);
+		else if (i >= offsets[particle::KP] && i < offsets[particle::CLM])
+			neuron->checkCollision(currParticle, prevParticle, particle::CLM);
+		else if (i >= offsets[particle::CLM] && i < offsets[particle::ORGANIC_ANION])
+			neuron->checkCollision(currParticle, prevParticle, particle::ORGANIC_ANION);
 		else
-			neuron->checkCollision(currParticle, prevParticle, particle::NONE);
+			neuron->checkCollision(currParticle, prevParticle, particle::NEUROTRANSMITTER);
 	}
 }
 
 inline void Simulation::updateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long particlesBufferSizeInLoop = particlesBufferSize;
+	const long particlesBufferSizeInLoop = activeParticlesCount;
 
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
@@ -661,64 +751,76 @@ inline void Simulation::render()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	uniforms.viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
 
-	// render channels
-	size_t channelsOffset = 0;
+	if (renderChannels) {
+		// render channels
+		size_t channelsOffset = 0;
 
-	channelsRenderProgram->use();
+		channelsRenderProgram->use();
 
-	uniforms.channelRadius = channelRadius[channel::NAP];
-	channelsRenderProgram->setUniforms(uniforms);
+		uniforms.channelRadius = channelRadius[channel::NAP];
+		channelsRenderProgram->setUniforms(uniforms);
 
-	glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture);
-	glBindVertexArray(NapIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, NapChannelsCount);
-	channelsOffset += NapChannelsCount;
+		glBindTexture(GL_TEXTURE_2D, NapIonChannelTexture);
+		glBindVertexArray(NapIonsChannelsVAO);
+		glDrawArrays(GL_POINTS, channelsOffset, NapChannelsCount);
+		channelsOffset += NapChannelsCount;
 
-	uniforms.channelRadius = channelRadius[channel::KP];
-	channelsRenderProgram->setUniforms(uniforms);
+		uniforms.channelRadius = channelRadius[channel::KP];
+		channelsRenderProgram->setUniforms(uniforms);
 
-	glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture);
-	glBindVertexArray(KpIonsChannelsVAO);
-	glDrawArrays(GL_POINTS, channelsOffset, KpChannelsCount);
-	channelsOffset += KpChannelsCount;
+		glBindTexture(GL_TEXTURE_2D, KpIonChannelTexture);
+		glBindVertexArray(KpIonsChannelsVAO);
+		glDrawArrays(GL_POINTS, channelsOffset, KpChannelsCount);
+		channelsOffset += KpChannelsCount;
+	}
+	
+	if (renderParticles) {
+		// render particles
+		size_t ionsOffset = 0;
 
-	// render ions
-	size_t ionsOffset = 0;
+		ionsRenderProgram->use();
 
-	ionsRenderProgram->use();
+		uniforms.ionRadius = particleRadius[particle::NAP];
+		ionsRenderProgram->setUniforms(uniforms);
 
-	uniforms.ionRadius = particleRadius[particle::NAP];
-	ionsRenderProgram->setUniforms(uniforms);
+		glBindTexture(GL_TEXTURE_2D, NapIonTexture);
+		glBindVertexArray(NapIonsVAO);
+		glDrawArrays(GL_POINTS, ionsOffset, config.NapIonsNum);
+		ionsOffset += config.NapIonsNum;
 
-	glBindTexture(GL_TEXTURE_2D, NapIonTexture);
-	glBindVertexArray(NapIonsVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.NapIonsNum);
-	ionsOffset += config.NapIonsNum;
+		uniforms.ionRadius = particleRadius[particle::KP];
+		ionsRenderProgram->setUniforms(uniforms);
 
-	uniforms.ionRadius = particleRadius[particle::KP];
-	ionsRenderProgram->setUniforms(uniforms);
+		glBindTexture(GL_TEXTURE_2D, KpIonTexture);
+		glBindVertexArray(KpIonsVAO);
+		glDrawArrays(GL_POINTS, ionsOffset, config.KpIonsNum);
+		ionsOffset += config.KpIonsNum;
 
-	glBindTexture(GL_TEXTURE_2D, KpIonTexture);
-	glBindVertexArray(KpIonsVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.KpIonsNum);
-	ionsOffset += config.KpIonsNum;
+		uniforms.ionRadius = particleRadius[particle::CLM];
+		ionsRenderProgram->setUniforms(uniforms);
 
-	uniforms.ionRadius = particleRadius[particle::CLM];
-	ionsRenderProgram->setUniforms(uniforms);
+		glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
+		glBindVertexArray(ClmIonsVAO);
+		glDrawArrays(GL_POINTS, ionsOffset, config.ClmIonsNum);
+		ionsOffset += config.ClmIonsNum;
 
-	glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
-	glBindVertexArray(ClmIonsVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.ClmIonsNum);
-	ionsOffset += config.ClmIonsNum;
+		uniforms.ionRadius = particleRadius[particle::ORGANIC_ANION];
+		ionsRenderProgram->setUniforms(uniforms);
 
-	uniforms.ionRadius = particleRadius[particle::MASSIVEION];
-	ionsRenderProgram->setUniforms(uniforms);
+		glBindTexture(GL_TEXTURE_2D, otherParticlesTexture);
+		glBindVertexArray(otherParticlesVAO);
+		glDrawArrays(GL_POINTS, ionsOffset, config.otherParticlesNum);
+		ionsOffset += config.otherParticlesNum;
 
-	glBindTexture(GL_TEXTURE_2D, otherParticlesTexture);
-	glBindVertexArray(otherParticlesVAO);
-	glDrawArrays(GL_POINTS, ionsOffset, config.otherParticlesNum);
-	ionsOffset += config.otherParticlesNum;
+		uniforms.ionRadius = particleRadius[particle::NEUROTRANSMITTER];
+		ionsRenderProgram->setUniforms(uniforms);
 
+		glBindTexture(GL_TEXTURE_2D, neurotransmittersTexture);
+		glBindVertexArray(neurotransmittersVAO);
+		glDrawArrays(GL_POINTS, ionsOffset, neurotransmittersCount);
+		ionsOffset += neurotransmittersCount;
+	}
+	
 	// render neuron
 	neuron->render(uniforms);
 

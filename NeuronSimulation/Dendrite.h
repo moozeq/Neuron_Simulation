@@ -25,5 +25,6 @@ public:
 	bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const;
 
 	void setSynapseProbability(float probability);
+	float* getSynapsePoint();
 };
 

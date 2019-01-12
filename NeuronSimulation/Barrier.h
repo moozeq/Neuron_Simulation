@@ -3,7 +3,7 @@
 
 namespace collision {
 	enum Type {
-		NONE, INSIDE, OUTSIDE, DISC
+		NONE, INSIDE, OUTSIDE, DISC_INSIDE, DISC_OUTSIDE
 	};
 }
 

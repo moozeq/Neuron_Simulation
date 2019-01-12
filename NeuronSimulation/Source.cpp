@@ -22,30 +22,32 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.NapIonsNum = 5000;
-	config.KpIonsNum = 000;
-	config.ClmIonsNum = 000;
-	config.otherParticlesNum = 0;
+	config.maxNeurotransmittersNum = 5000;
+	config.NapIonsNum = 440;
+	config.KpIonsNum = 4000;
+	config.ClmIonsNum = 160;
+	config.otherParticlesNum = 400;
 
 	config.NapIonsChannelsDensity[barrier::SOMA] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::SOMA] = 0.0f;
+	config.KpIonsChannelsDensity[barrier::SOMA] = 10.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON] = 0.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 10.0f;
 
 	config.NapIonsChannelsDensity[barrier::DENDRITE] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
+	config.KpIonsChannelsDensity[barrier::DENDRITE] = 10.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 3000.0f;
 	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 3000.0f;
+	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 5000.0f;
 	config.KpIonsChannelsDensity[barrier::SYNAPSE] = 0.0f;
 
 	config.NapIonTexturePath = "NapIon.png";
 	config.KpIonTexturePath = "KpIon.png";
 	config.ClmIonTexturePath = "ClmIon.png";
 	config.otherParticlesTexturePath = "otherParticles.png";
+	config.neurotransmittersTexturePath = "neurotransmitters.png";
 
 	config.NapChannelTexturePath = "NapChannel.png";
 	config.KpChannelTexturePath = "KpChannel.png";
