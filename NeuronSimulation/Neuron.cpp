@@ -76,7 +76,7 @@ void Neuron::setupChannels(unsigned barrierIndex)
 
 void Neuron::setupSoma()
 {
-	float somaRadius = 0.5f;
+	float somaRadius = 1.0f;
 	float somaArea;
 	unsigned somaNapChannelsCount = 0;
 	unsigned somaKpChannelsCount = 0;
@@ -91,7 +91,7 @@ void Neuron::setupAxon()
 {
 	// axon real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
 	float axonRadius = 0.25f;
-	float axonLength = 5.0f;
+	float axonLength = 12.0f;
 	float axonArea;
 	double axonHillockAreaFactor = 0.1;
 
@@ -119,7 +119,7 @@ void Neuron::setupAxon()
 void Neuron::setupDendrites()
 {
 	// dendrite real radius = 0.0625um, length = 1um
-	float dendriteRadius = 0.125f;
+	float dendriteRadius = 0.0625f;
 	float dendriteLength = 1.0f;
 	float dendriteArea;
 

@@ -63,6 +63,7 @@ class Simulation
 	float particleRadius[particle::TYPES_COUNT];
 	long particlesBufferSize;
 	long activeParticlesCount;
+	long activeNapsCount;
 	float* particlesPos;
 	float* synapsePosition;
 	long neurotransmittersCount;
@@ -119,6 +120,7 @@ class Simulation
 	inline void calculateParticlesPositions();
 	inline void calculateCollisions();
 	inline void updateParticlesPositions();
+	inline void updateNapIonsFromChannels();
 	inline void update();
 	inline void render();
 
@@ -131,6 +133,7 @@ public:
 	void start(void);
 	void freeze(void);
 	void reverse(void);
+	void reset(void);
 
 	double getDeltaTime(void) const;
 };

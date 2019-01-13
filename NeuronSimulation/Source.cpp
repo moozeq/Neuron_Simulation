@@ -13,28 +13,29 @@ int main(void)
 	Config config;
 	// distance 1.0 in simulation is 1.0 um in real world
 	config.metricFactor = 1e-6;
-	// time 1.0 in simulation is 1.0 ns in real world
+	// time 1.0 in simulation is 100.0 ns in real world
 	config.timeFactor = 1e-7;
 
 	config.buffersNum = 2;
+	config.NapInflow = 0.1e7;
 
 	config.width = 1200;
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.maxNeurotransmittersNum = 5000;
-	config.NapIonsNum = 440;
-	config.KpIonsNum = 4000;
-	config.ClmIonsNum = 160;
-	config.otherParticlesNum = 400;
+	config.maxNeurotransmittersNum = 1000;
+	config.NapIonsNum = 16000;
+	config.KpIonsNum = 00;
+	config.ClmIonsNum = 0;
+	config.otherParticlesNum = 00;
 
-	config.NapIonsChannelsDensity[barrier::SOMA] = 1000.0f;
+	config.NapIonsChannelsDensity[barrier::SOMA] = 500.0f;
 	config.KpIonsChannelsDensity[barrier::SOMA] = 10.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON] = 1000.0f;
+	config.NapIonsChannelsDensity[barrier::AXON] = 5000.0f;
 	config.KpIonsChannelsDensity[barrier::AXON] = 10.0f;
 
-	config.NapIonsChannelsDensity[barrier::DENDRITE] = 1000.0f;
+	config.NapIonsChannelsDensity[barrier::DENDRITE] = 5000.0f;
 	config.KpIonsChannelsDensity[barrier::DENDRITE] = 10.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 3000.0f;

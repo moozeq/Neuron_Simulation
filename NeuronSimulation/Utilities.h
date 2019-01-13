@@ -39,7 +39,7 @@ namespace phy {
 	constexpr double pi = 3.14159265359;
 
 	// >>>>>> CHANGEME <<<<<< no scale
-	constexpr double tempIonScale = 10;
+	constexpr double tempIonScale = 50;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 

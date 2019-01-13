@@ -8,6 +8,7 @@ struct Config
 	double timeFactor;
 
 	size_t buffersNum;
+	double NapInflow;
 
 	int width;
 	int height;

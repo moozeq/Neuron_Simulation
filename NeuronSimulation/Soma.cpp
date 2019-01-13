@@ -146,7 +146,6 @@ bool Soma::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collisio
 
 bool Soma::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 {
-	// TODO not only X coord but point
 	float u = getRandDouble(0.0, 1.0);
 	float v = getRandDouble(0.0, 1.0);
 	float theta = 2 * phy::pi * u;
