@@ -17,6 +17,19 @@ int main(void)
 	config.timeFactor = 1e-7;
 
 	config.buffersNum = 2;
+
+	// nucleus
+	config.nucleusRadius = 0.3;
+	// soma
+	config.somaRadius = 0.8;
+	// axon
+	config.axonRadius = 0.125;
+	config.axonLength = 12.0;
+	config.axonHillockAreaFactor = 0.03125;
+	// dendrite
+	config.dendriteRadius = 0.0625;
+	config.dendriteLength = 1.0;
+
 	config.NapInflow = 0.1e7;
 
 	config.width = 1200;
@@ -25,9 +38,9 @@ int main(void)
 
 	config.maxNeurotransmittersNum = 1000;
 	config.NapIonsNum = 16000;
-	config.KpIonsNum = 00;
+	config.KpIonsNum = 0;
 	config.ClmIonsNum = 0;
-	config.otherParticlesNum = 00;
+	config.otherParticlesNum = 0;
 
 	config.NapIonsChannelsDensity[barrier::SOMA] = 2000.0f;
 	config.KpIonsChannelsDensity[barrier::SOMA] = 100.0f;

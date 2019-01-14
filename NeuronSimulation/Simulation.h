@@ -1,9 +1,6 @@
 #pragma once
 #include "Utilities.h"
 #include "Config.h"
-#include "Camera.h"
-#include "Particle.h"
-#include "Channel.h"
 #include "Neuron.h"
 
 class Simulation

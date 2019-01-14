@@ -102,7 +102,7 @@ void Simulation::setupStructures()
 
 void Simulation::setupNeuronStructures()
 {
-	neuron = new Neuron(metricFactor, timeFactor, config.NapIonsChannelsDensity, config.KpIonsChannelsDensity);
+	neuron = new Neuron(metricFactor, timeFactor, config);
 	channelsBufferSize = neuron->channels.size();
 	NapChannelsCount = neuron->allNapChannelsCount;
 	KpChannelsCount = neuron->allKpChannelsCount;
@@ -513,7 +513,7 @@ inline void Simulation::updateChannelsStates()
 		Channel& currChannel = neuron->channels[i];
 		
 		// TODO probability to open instead of threshold (hidden markov model)
-		// TODO add relative refraction 
+		// TODO add relative refraction
 		// TODO channels open/close/inactive when deltaTime < 0
 
 		// voltage gated channels need voltage inside neuron computing

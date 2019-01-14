@@ -14,6 +14,7 @@
 #include <ext.hpp>
 
 #include "STBImage.h"
+#include "Camera.h"
 #include "ShaderProgram.h"
 #include "Particle.h"
 #include "Channel.h"

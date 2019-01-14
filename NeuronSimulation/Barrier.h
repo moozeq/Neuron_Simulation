@@ -11,14 +11,18 @@ namespace barrier {
 	enum Type {
 		SOMA, AXON, DENDRITE, AXON_HILLOCK, SYNAPSE, NUCLEUS
 	};
-	enum Counts {
-		TYPES_COUNT = 3, DENSITY_TYPES_COUNT = 5
-	};
 	enum Connection {
 		SOMA_AXON, DENDRITE_SOMA
 	};
 	enum Location {
 		NUCLEUS_LOC, SOMA_LOC, AXON_LOC, DENDRITE_LOC
+	};
+
+	// types: soma, axon, dendrite
+	// parts: nucleus, soma, axon, dendrite
+	// different densities: soma, axon, dendrite, axon hillock, synapse
+	enum Counts {
+		TYPES_COUNT = 3, PARTS_COUNT = 4, DENSITY_TYPES_COUNT = 5
 	};
 }
 

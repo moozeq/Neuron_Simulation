@@ -1,6 +1,6 @@
 #pragma once
 #include "Utilities.h"
-#include "Barrier.h"
+#include "Config.h"
 #include "Axon.h"
 #include "Soma.h"
 #include "Dendrite.h"
@@ -10,6 +10,7 @@ class Neuron
 {
 	friend class Simulation;
 
+	Config config;
 	ShaderProgram* barriersRenderProgram;
 
 	std::vector<Channel> channels;
@@ -20,6 +21,8 @@ class Neuron
 	double metricFactor;
 	double timeFactor;
 
+	double areas[barrier::PARTS_COUNT];
+
 	double NapChannelsDensity[barrier::DENSITY_TYPES_COUNT];
 	double KpChannelsDensity[barrier::DENSITY_TYPES_COUNT];
 
@@ -29,7 +32,7 @@ class Neuron
 	unsigned allNapChannelsCount;
 	unsigned allKpChannelsCount;
 
-	float addBarrier(float x, float y, float z, float radius, float length, barrier::Type barrierType);
+	double addBarrier(double x, double y, double z, double radius, double length, barrier::Type barrierType);
 
 	void setupPrograms();
 	void setupChannels(unsigned barrierIndex);
@@ -42,7 +45,7 @@ class Neuron
 	void setupStructures();
 
 public:
-	Neuron(double _metricFactor, double _timeFactor, double _NapChannelsDensity[barrier::DENSITY_TYPES_COUNT], double _KpChannelsDensity[barrier::DENSITY_TYPES_COUNT]);
+	Neuron(double _metricFactor, double _timeFactor, const Config& config);
 	~Neuron();
 	void render(shader::Uniforms uniforms) const;
 	std::vector<float> getChannels();
