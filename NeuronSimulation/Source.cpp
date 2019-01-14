@@ -29,19 +29,19 @@ int main(void)
 	config.ClmIonsNum = 0;
 	config.otherParticlesNum = 00;
 
-	config.NapIonsChannelsDensity[barrier::SOMA] = 500.0f;
-	config.KpIonsChannelsDensity[barrier::SOMA] = 10.0f;
+	config.NapIonsChannelsDensity[barrier::SOMA] = 2000.0f;
+	config.KpIonsChannelsDensity[barrier::SOMA] = 100.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON] = 5000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON] = 10.0f;
+	config.NapIonsChannelsDensity[barrier::AXON] = 10000.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 100.0f;
 
-	config.NapIonsChannelsDensity[barrier::DENDRITE] = 5000.0f;
-	config.KpIonsChannelsDensity[barrier::DENDRITE] = 10.0f;
+	config.NapIonsChannelsDensity[barrier::DENDRITE] = 1000.0f;
+	config.KpIonsChannelsDensity[barrier::DENDRITE] = 100.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 3000.0f;
 	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 5000.0f;
+	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 15000.0f;
 	config.KpIonsChannelsDensity[barrier::SYNAPSE] = 0.0f;
 
 	config.NapIonTexturePath = "NapIon.png";

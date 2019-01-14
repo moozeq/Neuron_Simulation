@@ -112,7 +112,7 @@ collision::Type Dendrite::checkCollision(const float newCoords[3], const float o
 	if (oldD < innerRadius &&
 		newD < innerRadius &&
 		newCoords[0] > startCoords[0] &&
-		oldCoords[0] < startCoords[0])
+		oldCoords[0] <= startCoords[0])
 		return collision::DISC_OUTSIDE;
 
 	// TODO better inside bilayer collision
@@ -166,9 +166,9 @@ int Dendrite::getCollisionPoint(float* point, float newCoords[3], float oldCoord
 	else
 		return -2;
 
-	point[0] = (newCoords[0] - oldCoords[0]) / 2.0f;
-	point[1] = (newCoords[1] - oldCoords[1]) / 2.0f;
-	point[2] = (newCoords[2] - oldCoords[2]) / 2.0f;
+	point[0] = oldCoords[0] + (newCoords[0] - oldCoords[0]) / 2.0f;
+	point[1] = oldCoords[1] + (newCoords[1] - oldCoords[1]) / 2.0f;
+	point[2] = oldCoords[2] + (newCoords[2] - oldCoords[2]) / 2.0f;
 	return -1;
 }
 

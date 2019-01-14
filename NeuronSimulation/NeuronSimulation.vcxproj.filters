@@ -51,6 +51,9 @@
     <ClCompile Include="Dendrite.cpp">
       <Filter>Neuron\Barriers</Filter>
     </ClCompile>
+    <ClCompile Include="Nucleus.cpp">
+      <Filter>Neuron\Barriers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Utilities.h">
@@ -90,6 +93,9 @@
       <Filter>Neuron\Barriers</Filter>
     </ClInclude>
     <ClInclude Include="Dendrite.h">
+      <Filter>Neuron\Barriers</Filter>
+    </ClInclude>
+    <ClInclude Include="Nucleus.h">
       <Filter>Neuron\Barriers</Filter>
     </ClInclude>
   </ItemGroup>

@@ -62,11 +62,11 @@ class Simulation
 	std::vector<double> partAccOrigin;
 	float particleRadius[particle::TYPES_COUNT];
 	long particlesBufferSize;
+	long neurotransmittersCount;
 	long activeParticlesCount;
 	long activeNapsCount;
 	float* particlesPos;
 	float* synapsePosition;
-	long neurotransmittersCount;
 
 /* -----------------CHANNELS----------------- */
 
@@ -119,8 +119,8 @@ class Simulation
 	inline void updateChannelsStates();
 	inline void calculateParticlesPositions();
 	inline void calculateCollisions();
-	inline void updateParticlesPositions();
 	inline void updateNapIonsFromChannels();
+	inline void updateParticlesPositions();
 	inline void update();
 	inline void render();
 

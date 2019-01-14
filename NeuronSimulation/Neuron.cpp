@@ -18,6 +18,10 @@ float Neuron::addBarrier(float x, float y, float z, float radius, float length, 
 		area = 2 * phy::pi * radius * length;
 		barriers.push_back(new Dendrite(midPoint, radius, length, lipidBilayerWidth));
 		break;
+	case barrier::NUCLEUS:
+		area = 4 * phy::pi * radius * radius;
+		barriers.push_back(new Nucleus(midPoint, radius, lipidBilayerWidth));
+		break;
 	}
 
 	// returns area in metric factor squared
@@ -53,6 +57,15 @@ void Neuron::setupChannels(unsigned barrierIndex)
 		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
 		outsideCoords[2] = insideCoords[2] + lipidBilayerLengthVec[2];
 
+		if (barrierIndex == barrier::DENDRITE_LOC) {
+			Dendrite* dendrite = static_cast<Dendrite*>(barrier);
+			float* synapse = dendrite->getSynapsePoint();
+			if (outsideCoords[0] == synapse[0]) {
+				channels[i] = Channel(insideCoords, outsideCoords, channel::NAP, channel::LIGAND_GATED);
+				continue;
+			}
+		}
+
 		channels[i] = Channel(insideCoords, outsideCoords, channel::NAP, channel::VOLTAGE_GATED);
 	}
 
@@ -70,13 +83,30 @@ void Neuron::setupChannels(unsigned barrierIndex)
 		outsideCoords[1] = insideCoords[1] + lipidBilayerLengthVec[1];
 		outsideCoords[2] = insideCoords[2] + lipidBilayerLengthVec[2];
 
+		if (barrierIndex == barrier::DENDRITE_LOC) {
+			Dendrite* dendrite = static_cast<Dendrite*>(barrier);
+			float* synapse = dendrite->getSynapsePoint();
+			if (outsideCoords[0] == synapse[0]) {
+				--i;
+				continue;
+			}
+		}
+
 		channels[i] = Channel(insideCoords, outsideCoords, channel::KP, channel::VOLTAGE_GATED);
 	}
 }
 
+void Neuron::setupNucleus()
+{
+	float nucleusRadius = 0.3f;
+	float nucleusArea;
+
+	nucleusArea = addBarrier(0.0f, 0.0f, 0.0f, nucleusRadius, 0.0f, barrier::NUCLEUS);
+}
+
 void Neuron::setupSoma()
 {
-	float somaRadius = 1.0f;
+	float somaRadius = 0.8f;
 	float somaArea;
 	unsigned somaNapChannelsCount = 0;
 	unsigned somaKpChannelsCount = 0;
@@ -90,13 +120,13 @@ void Neuron::setupSoma()
 void Neuron::setupAxon()
 {
 	// axon real radius = 0.125um, length = 5um, area = 2pi * 0.125um * 0.5um = ~4um2
-	float axonRadius = 0.25f;
+	float axonRadius = 0.125f;
 	float axonLength = 12.0f;
 	float axonArea;
-	double axonHillockAreaFactor = 0.1;
+	float axonHillockAreaFactor = 0.03125f;
 
-	float somaRadius = barriers[0]->radius;
-	float somaInnerRadius = barriers[0]->innerRadius;
+	float somaRadius = barriers[barrier::SOMA_LOC]->radius;
+	float somaInnerRadius = barriers[barrier::SOMA_LOC]->innerRadius;
 	float somaAxonGap = getGap(somaInnerRadius, axonRadius - lipidBilayerWidth / 2.0f);
 
 	axonArea = addBarrier(somaRadius + axonLength / 2.0f - somaAxonGap, 0.0f, 0.0f, axonRadius, axonLength, barrier::AXON);
@@ -112,8 +142,9 @@ void Neuron::setupAxon()
 	KpChannelsCount[barrier::AXON] += axonSynapseKpChannelsCount;
 
 	float probability = (float)axonSynapseNapChannelsCount / (float)(axonSynapseNapChannelsCount + axonNapChannelsCount);
-	Axon* axon = static_cast<Axon*>(barriers[1]);
+	Axon* axon = static_cast<Axon*>(barriers[barrier::AXON_LOC]);
 	axon->setSynapseProbability(probability);
+	axon->setAxonHillockAreaFactor(axonHillockAreaFactor);
 }
 
 void Neuron::setupDendrites()
@@ -123,8 +154,8 @@ void Neuron::setupDendrites()
 	float dendriteLength = 1.0f;
 	float dendriteArea;
 
-	float somaRadius = barriers[0]->radius;
-	float somaInnerRadius = barriers[0]->innerRadius;
+	float somaRadius = barriers[barrier::SOMA_LOC]->radius;
+	float somaInnerRadius = barriers[barrier::SOMA_LOC]->innerRadius;
 	float dendriteSomaGap = getGap(somaInnerRadius, dendriteRadius - lipidBilayerWidth / 2.0f);
 
 	dendriteArea = addBarrier(-somaRadius - dendriteLength / 2.0f + dendriteSomaGap, 0.0f, 0.0f, dendriteRadius, dendriteLength, barrier::DENDRITE);
@@ -140,42 +171,48 @@ void Neuron::setupDendrites()
 	KpChannelsCount[barrier::DENDRITE] += dendriteSynapseKpChannelsCount;
 
 	float probability = (float)dendriteSynapseNapChannelsCount / (float)(dendriteSynapseNapChannelsCount + dendriteNapChannelsCount);
-	Dendrite* dendrite = static_cast<Dendrite*>(barriers[2]);
+	Dendrite* dendrite = static_cast<Dendrite*>(barriers[barrier::DENDRITE_LOC]);
 	dendrite->setSynapseProbability(probability);
 }
 
 void Neuron::setupChannelsIndexes()
 {
-	// soma
-	barriers[0]->NapChannelsIndexFrom = 0;
-	barriers[0]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA];
+	// nuclues
+	barriers[barrier::NUCLEUS_LOC]->NapChannelsIndexFrom = 0;
+	barriers[barrier::NUCLEUS_LOC]->NapChannelsIndexTo = 0;
 
-	barriers[0]->KpChannelsIndexFrom = allNapChannelsCount;
-	barriers[0]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA];
+	barriers[barrier::NUCLEUS_LOC]->KpChannelsIndexFrom = 0;
+	barriers[barrier::NUCLEUS_LOC]->KpChannelsIndexTo = 0;
+
+	// soma
+	barriers[barrier::SOMA_LOC]->NapChannelsIndexFrom = 0;
+	barriers[barrier::SOMA_LOC]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA];
+
+	barriers[barrier::SOMA_LOC]->KpChannelsIndexFrom = allNapChannelsCount;
+	barriers[barrier::SOMA_LOC]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA];
 
 	// axon
-	barriers[1]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA];
-	barriers[1]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
+	barriers[barrier::AXON_LOC]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA];
+	barriers[barrier::AXON_LOC]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
 
-	barriers[1]->KpChannelsIndexFrom = allNapChannelsCount + KpChannelsCount[barrier::SOMA];
-	barriers[1]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
+	barriers[barrier::AXON_LOC]->KpChannelsIndexFrom = allNapChannelsCount + KpChannelsCount[barrier::SOMA];
+	barriers[barrier::AXON_LOC]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
 
 	// dendrite
-	barriers[2]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
-	barriers[2]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON] + NapChannelsCount[barrier::DENDRITE];
+	barriers[barrier::DENDRITE_LOC]->NapChannelsIndexFrom = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON];
+	barriers[barrier::DENDRITE_LOC]->NapChannelsIndexTo = NapChannelsCount[barrier::SOMA] + NapChannelsCount[barrier::AXON] + NapChannelsCount[barrier::DENDRITE];
 
-	barriers[2]->KpChannelsIndexFrom = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
-	barriers[2]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON] + KpChannelsCount[barrier::DENDRITE];
-
+	barriers[barrier::DENDRITE_LOC]->KpChannelsIndexFrom = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON];
+	barriers[barrier::DENDRITE_LOC]->KpChannelsIndexTo = allNapChannelsCount + KpChannelsCount[barrier::SOMA] + KpChannelsCount[barrier::AXON] + KpChannelsCount[barrier::DENDRITE];
 }
 
 void Neuron::setupConnections()
 {
 	// add connection points
-	Soma* soma = static_cast<Soma*>(barriers[0]);
-	float somaInnerRadius = barriers[0]->innerRadius;
-	float axonInnerRadius = barriers[1]->innerRadius;
-	float dendriteInnerRadius = barriers[2]->innerRadius;
+	Soma* soma = static_cast<Soma*>(barriers[barrier::SOMA_LOC]);
+	float somaInnerRadius = barriers[barrier::SOMA_LOC]->innerRadius;
+	float axonInnerRadius = barriers[barrier::AXON_LOC]->innerRadius;
+	float dendriteInnerRadius = barriers[barrier::DENDRITE_LOC]->innerRadius;
 
 	float somaAxonConnection[3] = { soma->x0 + somaInnerRadius, 0.0f, 0.0f };
 	float dendriteSomaConnection[3] = { soma->x0 - somaInnerRadius, 0.0f, 0.0f };
@@ -186,6 +223,7 @@ void Neuron::setupConnections()
 
 void Neuron::setupStructures()
 {
+	setupNucleus();
 	setupSoma();
 	setupAxon();
 	setupDendrites();
@@ -250,7 +288,7 @@ std::vector<float> Neuron::getChannels()
 	return channelsAttribs;
 }
 
-bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const
+bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type)
 {
 	for (const Barrier* barrier : barriers) {
 		float newCoords[3] = { nextParticleState.x, nextParticleState.y, nextParticleState.z };
@@ -282,11 +320,11 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 
 			// check if collide with channel from current barrier
 			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
-				const Channel& currentChannel = channels[i];
+				Channel& currentChannel = channels[i];
 
-				// check if channel is open and if ion type is appropriate to channel type
-				if (currentChannel.state != channel::OPEN)
-					continue;
+				//// check if channel is open and if ion type is appropriate to channel type
+				//if (currentChannel.state != channel::OPEN)
+				//	continue;
 
 				float dx, dy, dz, d;
 
@@ -318,11 +356,41 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 						// change direction of particle's velocity vector  >>> inside layer <<<
 						//channelVecTemp = glm::vec3(currentChannel.xOut - currentChannel.xIn, currentChannel.yOut - currentChannel.yIn, currentChannel.zOut - currentChannel.zIn);
 					}
-					// particle passed through channel >>> outside layer <<<
+					// particle passed through channel >>> outside layer <<< or when ligand gated stay in channel position
 					else if (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE) {
-						nextParticleState.x = currentChannel.xIn;
-						nextParticleState.y = currentChannel.yIn;
-						nextParticleState.z = currentChannel.zIn;
+
+						// when neurotransmitter hits ligand gated channel
+						if (type == particle::NEUROTRANSMITTER && currentChannel.gating == channel::LIGAND_GATED && currentChannel.state == channel::CLOSED) {
+							nextParticleState.x = currentChannel.xOut;
+							nextParticleState.y = currentChannel.yOut;
+							nextParticleState.z = currentChannel.zOut;
+
+							oldParticleState.vx = nextParticleState.vx = 0.0f;
+							oldParticleState.vy = nextParticleState.vy = 0.0f;
+							oldParticleState.vz = nextParticleState.vz = 0.0f;
+
+							currentChannel.state = channel::OPEN;
+						}
+						else if (type == particle::NEUROTRANSMITTER && currentChannel.gating == channel::LIGAND_GATED && currentChannel.state == channel::OPEN) {
+							glm::vec3 n;
+							barrier->getCollisionNormalVec(collisionPoint, n, collisionType);
+							glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
+
+							nextParticleState.x = collisionPoint[0];
+							nextParticleState.y = collisionPoint[1];
+							nextParticleState.z = collisionPoint[2];
+
+							// need to update velocities in both particle states
+							oldParticleState.vx = nextParticleState.vx = newVelocity[0];
+							oldParticleState.vy = nextParticleState.vy = newVelocity[1];
+							oldParticleState.vz = nextParticleState.vz = newVelocity[2];
+							return true;
+						}
+						else {
+							nextParticleState.x = currentChannel.xIn;
+							nextParticleState.y = currentChannel.yIn;
+							nextParticleState.z = currentChannel.zIn;
+						}
 						// change direction of particle's velocity vector  >>> outside layer <<<
 						//channelVecTemp = glm::vec3(currentChannel.xIn - currentChannel.xOut, currentChannel.yIn - currentChannel.yOut, currentChannel.zIn - currentChannel.zOut);
 					}
@@ -340,6 +408,8 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 					oldParticleState.vx = nextParticleState.vx = v * channelVec[0];
 					oldParticleState.vy = nextParticleState.vy = v * channelVec[1];
 					oldParticleState.vz = nextParticleState.vz = v * channelVec[2];*/
+
+					
 
 					// collide with channel
 					return true;
@@ -369,7 +439,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 float* Neuron::getSynapsePosition()
 {
 	float* position;
-	Dendrite* dendrite = static_cast<Dendrite*>(barriers[2]);
+	Dendrite* dendrite = static_cast<Dendrite*>(barriers[barrier::DENDRITE_LOC]);
 	position = dendrite->getSynapsePoint();
 	return position;
 }

@@ -4,6 +4,7 @@
 #include "Axon.h"
 #include "Soma.h"
 #include "Dendrite.h"
+#include "Nucleus.h"
 
 class Neuron
 {
@@ -32,6 +33,7 @@ class Neuron
 
 	void setupPrograms();
 	void setupChannels(unsigned barrierIndex);
+	void setupNucleus();
 	void setupSoma();
 	void setupAxon();
 	void setupDendrites();
@@ -44,6 +46,6 @@ public:
 	~Neuron();
 	void render(shader::Uniforms uniforms) const;
 	std::vector<float> getChannels();
-	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const;
+	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type);
 	float* getSynapsePosition();
 };

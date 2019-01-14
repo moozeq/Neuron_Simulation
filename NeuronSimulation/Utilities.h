@@ -40,6 +40,7 @@ namespace phy {
 
 	// >>>>>> CHANGEME <<<<<< no scale
 	constexpr double tempIonScale = 50;
+	constexpr double tempChannelScale = 2;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 
@@ -72,8 +73,8 @@ namespace phy {
 	constexpr double OanC = -1.0 * e;
 	constexpr double OanA = k * OanC / OanM;
 
-	constexpr double NapChR = 20 * A;
-	constexpr double KpChR = 34 * A;
+	constexpr double NapChR = 20 * A * tempChannelScale;
+	constexpr double KpChR = 34 * A * tempChannelScale;
 }
 
 struct UCoord3 {

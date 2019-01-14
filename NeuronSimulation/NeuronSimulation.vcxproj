@@ -141,6 +141,7 @@
     <ClCompile Include="Channel.cpp" />
     <ClCompile Include="Dendrite.cpp" />
     <ClCompile Include="Neuron.cpp" />
+    <ClCompile Include="Nucleus.cpp" />
     <ClCompile Include="Simulation.cpp" />
     <ClCompile Include="Soma.cpp" />
     <ClCompile Include="Source.cpp" />
@@ -153,6 +154,7 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="Dendrite.h" />
     <ClInclude Include="Neuron.h" />
+    <ClInclude Include="Nucleus.h" />
     <ClInclude Include="Particle.h" />
     <ClInclude Include="ShaderProgram.h" />
     <ClInclude Include="Simulation.h" />

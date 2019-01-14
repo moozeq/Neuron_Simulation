@@ -13,12 +13,14 @@ Channel::Channel(float coordsIn[3], float coordsOut[3], channel::Type _type, cha
 {
 	switch (_type)
 	{
-	case channel::NAP_SYNAPSE:
 	case channel::NAP:
-		radius = phy::NapR;
+		radius = phy::NapChR;
 		break;
 	case channel::KP:
-		radius = phy::KpR;
+		radius = phy::KpChR;
+		break;
+	case channel::NEUROTRANSMITTER:
+		radius = phy::NapChR;
 		break;
 	default:
 		radius = 0.0f;

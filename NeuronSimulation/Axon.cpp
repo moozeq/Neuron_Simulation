@@ -48,6 +48,8 @@ void Axon::addDisc(std::vector<UCoord3>& indices, unsigned midPointIndex)
 Axon::Axon(float coords[3], float _radius, float _length, float _lipidBilayerWidth) :
 	length(_length), slices(30)
 {
+	synapseProbability = 0.0f;
+	axonHillockAreaFactor = 0.0f;
 	precision = 0.01f;
 	radius = _radius;
 	lipidBilayerWidth = _lipidBilayerWidth;
@@ -111,7 +113,7 @@ collision::Type Axon::checkCollision(const float newCoords[3], const float oldCo
 		return collision::DISC_INSIDE;
 	if (oldD < innerRadius &&
 		newD < innerRadius &&
-		oldCoords[0] > stopCoords[0] &&
+		oldCoords[0] >= stopCoords[0] &&
 		newCoords[0] < stopCoords[0])
 		return collision::DISC_OUTSIDE;
 
@@ -166,9 +168,9 @@ int Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3]
 	else
 		return -2;
 
-	point[0] = (newCoords[0] - oldCoords[0]) / 2.0f;
-	point[1] = (newCoords[1] - oldCoords[1]) / 2.0f;
-	point[2] = (newCoords[2] - oldCoords[2]) / 2.0f;
+	point[0] = oldCoords[0] + (newCoords[0] - oldCoords[0]) / 2.0f;
+	point[1] = oldCoords[1] + (newCoords[1] - oldCoords[1]) / 2.0f;
+	point[2] = oldCoords[2] + (newCoords[2] - oldCoords[2]) / 2.0f;
 	return -1;
 }
 
@@ -200,7 +202,10 @@ bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 		inOutVec = glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f));
 	}
 	else {
-		x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
+		if (getRandDouble(0.0, 1.0) < axonHillockAreaFactor)
+			x = getRandDouble(startCoords[0] + lipidBilayerWidth, startCoords[0] + lipidBilayerWidth + length * axonHillockAreaFactor);
+		else
+			x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
 		r = innerRadius;
 		inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
 	}
@@ -215,4 +220,14 @@ bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 void Axon::setSynapseProbability(float probability)
 {
 	synapseProbability = probability;
+}
+
+void Axon::setAxonHillockAreaFactor(float factor)
+{
+	axonHillockAreaFactor = factor;
+}
+
+float* Axon::getSynapsePoint()
+{
+	return stopCoords;
 }
