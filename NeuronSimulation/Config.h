@@ -25,17 +25,8 @@ struct Config
 	double NapInflow;
 
 	// ions
-	size_t NapIonsNum;
-	size_t KpIonsNum;
-	size_t ClmIonsNum;
-	size_t otherParticlesNum;
-	size_t maxNeurotransmittersNum;
-
-	std::string NapIonTexturePath;
-	std::string KpIonTexturePath;
-	std::string ClmIonTexturePath;
-	std::string otherParticlesTexturePath;
-	std::string neurotransmittersTexturePath;
+	size_t particlesCount[particle::TYPES_COUNT];
+	std::string particlesTextures[particle::TYPES_COUNT];
 
 	// channels
 	double NapIonsChannelsDensity[barrier::DENSITY_TYPES_COUNT];

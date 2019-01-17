@@ -65,9 +65,6 @@ void Neuron::setupChannels(unsigned barrierIndex)
 				continue;
 			}
 		}
-		else if (barrierIndex == barrier::DENDRITE_LOC) {
-
-		}
 
 		channels[i] = Channel(insideCoords, outsideCoords, channel::NAP, channel::VOLTAGE_GATED);
 	}
@@ -95,7 +92,7 @@ void Neuron::setupChannels(unsigned barrierIndex)
 			}
 		}
 
-		channels[i] = Channel(insideCoords, outsideCoords, channel::KP, channel::CONST_OPEN);
+		channels[i] = Channel(insideCoords, outsideCoords, channel::KP, channel::VOLTAGE_GATED);
 	}
 }
 
@@ -137,7 +134,9 @@ void Neuron::setupAxon()
 	KpChannelsCount[barrier::AXON] += axonSynapseKpChannelsCount;*/
 
 	float synapseProbability = 0;
-	float axonHillockProbability = (float)axonHillockNapChannelsCount / (float)(axonNapChannelsCount + axonHillockNapChannelsCount);
+	float axonHillockProbability = 0;
+	if (axonNapChannelsCount + axonKpChannelsCount + axonHillockNapChannelsCount + axonHillockKpChannelsCount != 0)
+		axonHillockProbability = (float)(axonHillockNapChannelsCount + axonHillockKpChannelsCount) / (float)(axonNapChannelsCount + axonKpChannelsCount + axonHillockNapChannelsCount + axonHillockKpChannelsCount);
 	Axon* axon = static_cast<Axon*>(barriers[barrier::AXON_LOC]);
 	axon->setSynapseProbability(synapseProbability);
 	axon->setAxonHillockProbability(axonHillockProbability);
@@ -299,7 +298,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 			unsigned channelsIndexFrom, channelsIndexTo;
 
 			// Nap and neurotransmitters can only get to cell from outside
-			if ((type == particle::NAP || type == particle::NEUROTRANSMITTER) && (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE)) {
+			if ((type == particle::NEUROTRANSMITTER) && (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE)) {
 				channelsIndexFrom = barrier->NapChannelsIndexFrom;
 				channelsIndexTo = barrier->NapChannelsIndexTo;
 			}
@@ -316,9 +315,9 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
 				Channel& currentChannel = channels[i];
 
-				//// check if channel is open and if ion type is appropriate to channel type
-				//if (currentChannel.state != channel::OPEN)
-				//	continue;
+				// check if channel is open and if ion type is appropriate to channel type
+				if (currentChannel.state != channel::OPEN && currentChannel.gating == channel::VOLTAGE_GATED)
+					continue;
 
 				float dx, dy, dz, d;
 

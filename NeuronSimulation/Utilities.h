@@ -47,8 +47,11 @@ namespace phy {
 	constexpr double lipidBilayerWidth = 60 * A;
 
 	constexpr double NapOpenTreshold = -40e-3;
-	constexpr double NapRepolarizationTreshold = -10e-3;
+	constexpr double NapRepolarizationTreshold = -50e-3;
 	constexpr double NapOpenTime = 1e-3 * tempTimeScale;
+
+	constexpr double KpOpenTreshold = 40e-3;
+	constexpr double KpRepolarizationTreshold = -40e-3;
 
 	constexpr double NtrR = 1.16 * A * tempIonScale;
 	constexpr double NtrM = 38.1754326758e-27;

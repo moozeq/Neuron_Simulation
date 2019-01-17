@@ -9,13 +9,20 @@ void Simulation::loadConfig(const Config& _config)
 	metricFactorSq = config.metricFactor * config.metricFactor;
 	metricFactor = config.metricFactor;
 	timeFactor = config.timeFactor;
+	bufferNum = 0;
 
 	inversedTimeFactor = 1.0 / config.timeFactor;
-	particlesBufferSize = config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum + config.maxNeurotransmittersNum;
-	activeParticlesCount = config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
-	bufferNum = 0;
-	neurotransmittersCount = 0;
+	particlesBufferSize = 0;
+	for (int i = 0; i < particle::TYPES_COUNT; ++i) {
+		particlesOffsets[i] = particlesBufferSize;
+		particlesBufferSize += config.particlesCount[i];
+	}
+
+	activeParticlesCount = 0;
+	activeNeurotransmittersCount = 0;
 	activeNapsCount = 0;
+	activeKpsCount = 0;
+
 	ice = false;
 	rewind = false;
 	renderParticles = true;
@@ -118,7 +125,7 @@ void Simulation::setupParticlesStructures()
 	size_t offset = 0;
 	double boundaries[3][2] = { { -1.4f, 12.4f }, { -0.03f, 0.03f }, { -0.03f, 0.03f } };
 
-	offset += config.NapIonsNum;
+	offset += config.particlesCount[particle::NAP];
 	while (i < offset) {
 		Particle* particle = newParticle(boundaries, particle::NAP);
 		particles[0].push_back(*particle);
@@ -128,7 +135,7 @@ void Simulation::setupParticlesStructures()
 		++i;
 	}
 
-	offset += config.KpIonsNum;
+	offset += config.particlesCount[particle::KP];
 	while (i < offset) {
 		Particle* particle = newParticle(boundaries, particle::KP);
 		particles[0].push_back(*particle);
@@ -138,7 +145,7 @@ void Simulation::setupParticlesStructures()
 		++i;
 	}
 
-	offset += config.ClmIonsNum;
+	offset += config.particlesCount[particle::CLM];
 	while (i < offset) {
 		Particle* particle = newParticle(boundaries, particle::CLM);
 		particles[0].push_back(*particle);
@@ -148,7 +155,7 @@ void Simulation::setupParticlesStructures()
 		++i;
 	}
 
-	offset += config.otherParticlesNum;
+	offset += config.particlesCount[particle::ORGANIC_ANION];
 	while (i < offset) {
 		Particle* particle = newParticle(boundaries, particle::ORGANIC_ANION);
 		particles[0].push_back(*particle);
@@ -158,7 +165,7 @@ void Simulation::setupParticlesStructures()
 		++i;
 	}
 
-	offset += config.maxNeurotransmittersNum;
+	offset += config.particlesCount[particle::NEUROTRANSMITTER];
 	while (i < offset) {
 		float offset[3] = { getRandDouble(-0.05, -0.01), getRandDouble(-0.003, 0.003), getRandDouble(-0.003, 0.003) };
 		float coords[3] = { synapsePosition[0] + offset[0], synapsePosition[1] + offset[1], synapsePosition[2] + offset[2] };
@@ -185,7 +192,7 @@ void Simulation::setupUniforms()
 
 	// set const values as uniforms in shader program
 	uniforms.channelWidth = phy::lipidBilayerWidth / metricFactor;
-	uniforms.opacity = 0.25f;
+	uniforms.opacity = 0.5f;
 
 	channelsRenderProgram->use();
 	channelsRenderProgram->setUniforms(uniforms);
@@ -195,11 +202,11 @@ void Simulation::setupUniforms()
 void Simulation::setupTextures()
 {
 	// load particles textures
-	NapIonTexture = loadMipmapTexture(GL_TEXTURE0, config.NapIonTexturePath.c_str());
-	KpIonTexture = loadMipmapTexture(GL_TEXTURE0, config.KpIonTexturePath.c_str());
-	ClmIonTexture = loadMipmapTexture(GL_TEXTURE0, config.ClmIonTexturePath.c_str());
-	otherParticlesTexture = loadMipmapTexture(GL_TEXTURE0, config.otherParticlesTexturePath.c_str());
-	neurotransmittersTexture = loadMipmapTexture(GL_TEXTURE0, config.neurotransmittersTexturePath.c_str());
+	NapIonTexture = loadMipmapTexture(GL_TEXTURE0, config.particlesTextures[particle::NAP].c_str());
+	KpIonTexture = loadMipmapTexture(GL_TEXTURE0, config.particlesTextures[particle::KP].c_str());
+	ClmIonTexture = loadMipmapTexture(GL_TEXTURE0, config.particlesTextures[particle::CLM].c_str());
+	otherParticlesTexture = loadMipmapTexture(GL_TEXTURE0, config.particlesTextures[particle::ORGANIC_ANION].c_str());
+	neurotransmittersTexture = loadMipmapTexture(GL_TEXTURE0, config.particlesTextures[particle::NEUROTRANSMITTER].c_str());
 
 	// load channels textures
 	NapIonChannelTexture = loadMipmapTexture(GL_TEXTURE0, config.NapChannelTexturePath.c_str());
@@ -370,13 +377,19 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 	// 1 - increase neurotransmitters count
 	if (key == GLFW_KEY_1 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->increaseNeurotransmitters(10);
-		log(simulation->logfile, "[+] Neurotransmitters count increased = " + std::to_string(simulation->neurotransmittersCount));
+		log(simulation->logfile, "[+] Neurotransmitters count increased = " + std::to_string(simulation->activeNeurotransmittersCount));
 	}
 	
 	// 2 - decrease neurotransmitters count
 	if (key == GLFW_KEY_2 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->decreaseNeurotransmitters(10);
-		log(simulation->logfile, "[-] Neurotransmitters count decreased = " + std::to_string(simulation->neurotransmittersCount));
+		log(simulation->logfile, "[-] Neurotransmitters count decreased = " + std::to_string(simulation->activeNeurotransmittersCount));
+	}
+	
+	// 3 - decrease neurotransmitters count to 0
+	if (key == GLFW_KEY_3 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+		simulation->decreaseNeurotransmitters(simulation->activeNeurotransmittersCount);
+		log(simulation->logfile, "[-] Neurotransmitters count decreased = " + std::to_string(simulation->activeNeurotransmittersCount));
 	}
 
 	// N - turn on/off rendering particles
@@ -391,8 +404,8 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 		log(simulation->logfile, "[*] Rendering channels = " + std::to_string(simulation->renderChannels));
 	}
 
-	// R - reset simulation
-	if (key == GLFW_KEY_R && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
+	// E - reset simulation
+	if (key == GLFW_KEY_E && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->reset();
 		log(simulation->logfile, "[*] Simulation's been reset");
 	}
@@ -402,6 +415,7 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 	// RIGHT - time speed + 20%
 	if (key == GLFW_KEY_RIGHT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->timeFactor *= 1.2f;
+		simulation->inversedTimeFactor = 1.0f / simulation->timeFactor;
 		std::ostringstream timeFactor;
 		timeFactor << simulation->timeFactor;
 		log(simulation->logfile, "[+] Time factor = " + timeFactor.str());
@@ -414,6 +428,7 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 	// LEFT - time speed - 20%
 	if (key == GLFW_KEY_LEFT && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
 		simulation->timeFactor *= 0.8f;
+		simulation->inversedTimeFactor = 1.0f / simulation->timeFactor;
 		std::ostringstream timeFactor;
 		timeFactor << simulation->timeFactor;
 		log(simulation->logfile, "[-] Time factor = " + timeFactor.str());
@@ -495,10 +510,21 @@ bool Simulation::updateFramebufferSize(int width, int height)
 inline void Simulation::updateChannelsStates()
 {
 	const long channelsBufferSizeInLoop = channelsBufferSize;
-	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum;
-	const long neurotransmittersCountInLoop = neurotransmittersCount;
-	const long particlesOffset = config.NapIonsNum - activeNapsCount;
-	const long particlesBufferSizeInLoop = particlesOffset + activeParticlesCount;
+
+	// neurotransmitters from first to last
+	const long neurotransmittersOffset = particlesOffsets[particle::NEUROTRANSMITTER];
+	const long activeNeurotransmittersInLoopIndex = particlesOffsets[particle::NEUROTRANSMITTER] + activeNeurotransmittersCount;
+
+	// nap ions counted from last to first
+	const long NapIonsOffset = config.particlesCount[particle::NAP] - activeNapsCount;
+	const long activeNapIonsInLoopIndex = config.particlesCount[particle::NAP];
+	
+	// kp ions counted from first to last
+	const long KpIonsOffset = particlesOffsets[particle::KP];
+	const long activeKpIonsInLoopIndex = particlesOffsets[particle::KP] + activeKpsCount;
+	
+	const long particlesOffset = config.particlesCount[particle::NAP] - activeNapsCount;
+	const long particlesBufferSizeInLoopIndex = particlesOffset + activeNapsCount + activeKpsCount;
 
 	// parallelization can be done due to no influence from other channels
 #pragma loop(hint_parallel(0))
@@ -519,7 +545,7 @@ inline void Simulation::updateChannelsStates()
 			float U;
 
 			// calc voltage inside neuron but only from Nap ions inside neuron
-			for (long j = particlesOffset; j < neurotransmittersOffset; ++j) {
+			for (long j = NapIonsOffset; j < activeNapIonsInLoopIndex; ++j) {
 				particle = &particles[bufferNum][j];
 
 				dx = particle->x - currChannel.xIn;
@@ -533,7 +559,24 @@ inline void Simulation::updateChannelsStates()
 				Ein += phy::k * particle->charge / (metricFactor * d);
 			}
 
+			// calc voltage outside neuron but only from Kp ions outside neuron
+			for (long j = KpIonsOffset; j < activeKpIonsInLoopIndex; ++j) {
+				particle = &particles[bufferNum][j];
+
+				dx = particle->x - currChannel.xOut;
+				dy = particle->y - currChannel.yOut;
+				dz = particle->z - currChannel.zOut;
+
+				d = sqrt(dx * dx + dy * dy + dz * dz);
+				if (d == 0.0)
+					continue;
+
+				Ein -= phy::k * particle->charge / (metricFactor * d);
+			}
+
 			currChannel.U = U = Ein - Eout;
+			if (i < 10)
+				std::cout << "\n[Channel] index = " + std::to_string(i) + " Ein = " + std::to_string(Ein) + ", Eout = " + std::to_string(Eout) + ", U = " + std::to_string(U);
 
 			if (currChannel.type == channel::NAP) {
 				if (currChannel.state == channel::CLOSED) {
@@ -552,8 +595,21 @@ inline void Simulation::updateChannelsStates()
 					}
 				}
 				else if (currChannel.state == channel::INACTIVE) {
-					currChannel.timeLeft -= fabs(deltaTime);
-					if (currChannel.timeLeft < 0.0) {
+					if (U < phy::NapRepolarizationTreshold) {
+						currChannel.state = channel::CLOSED;
+						channelsAttribs[i * 4 + 3] = 1.0f;
+					}
+				}
+			}
+			else if (currChannel.type == channel::KP) {
+				if (currChannel.state == channel::CLOSED) {
+					if (U > phy::KpOpenTreshold) {
+						currChannel.state = channel::OPEN;
+						channelsAttribs[i * 4 + 3] = 0.0f;
+					}
+				}
+				else if (currChannel.state == channel::OPEN) {
+					if (U < phy::KpRepolarizationTreshold) {
 						currChannel.state = channel::CLOSED;
 						channelsAttribs[i * 4 + 3] = 1.0f;
 					}
@@ -567,7 +623,7 @@ inline void Simulation::updateChannelsStates()
 			else if (currChannel.state == channel::OPEN) {
 				// open when neurotransmitter in its coordsOut position
 				bool open = false;
-				for (long k = neurotransmittersOffset; k < neurotransmittersOffset + neurotransmittersCountInLoop && !open; ++k) {
+				for (long k = neurotransmittersOffset; k < activeNeurotransmittersInLoopIndex && !open; ++k) {
 					const Particle* neurotransmitter = &particles[bufferNum][k];
 					if (neurotransmitter->x == currChannel.xOut && neurotransmitter->y == currChannel.yOut && neurotransmitter->z == currChannel.zOut)
 						open = true;
@@ -586,13 +642,18 @@ inline void Simulation::updateChannelsStates()
 inline void Simulation::calculateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long particlesOffset = config.NapIonsNum - activeNapsCount;
-	const long particlesBufferSizeInLoop = particlesOffset + activeParticlesCount;
+
+	// neurotransmitters from first to last
+	const long neurotransmittersOffset = particlesOffsets[particle::NEUROTRANSMITTER];
+	const long activeNeurotransmittersInLoopIndex = particlesOffsets[particle::NEUROTRANSMITTER] + activeNeurotransmittersCount;
+
+	const long particlesOffset = config.particlesCount[particle::NAP] - activeNapsCount;
+	const long particlesBufferSizeInLoopIndex = particlesOffset + activeNapsCount + activeKpsCount;
 
 	// parallelization can be done due to double buffering particles vector
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
-	for (long i = particlesOffset; i < particlesBufferSizeInLoop; ++i) {
+	for (long i = particlesOffset; i < particlesBufferSizeInLoopIndex; ++i) {
 		Particle& currParticle = particles[bufferNum][i];
 		Particle& prevParticle = particles[nextBufferNum][i];
 
@@ -627,7 +688,83 @@ inline void Simulation::calculateParticlesPositions()
 		}
 
 		// calculate forces from particles current + 1 to last
-		for (long j = i + 1; j < particlesBufferSizeInLoop; ++j) {
+		for (long j = i + 1; j < particlesBufferSizeInLoopIndex; ++j) {
+			particle = &particles[nextBufferNum][j];
+
+			dx = particle->x - currParticle.x;
+			dy = particle->y - currParticle.y;
+			dz = particle->z - currParticle.z;
+
+			// distance between 2 particles squared (d - distance, Sq - squared)
+			dSq = dx * dx + dy * dy + dz * dz;
+			if (dSq == 0.0)
+				continue;
+
+			// part of acceleration which depends on other particle's charge and distance
+			partAccOther = particle->charge / dSq;
+
+			ax -= partAccOther * dx;
+			ay -= partAccOther * dy;
+			az -= partAccOther * dz;
+		}
+
+		// muliply by part of acceleration which depends on current particle
+		double axdt = ax * partAccOriginDt;
+		double aydt = ay * partAccOriginDt;
+		double azdt = az * partAccOriginDt;
+
+		// new coordinates
+		// new coordinates: x = x0 + vx0 * dt + ax * dt^2 / 2
+		// 'axdt = ax * dt' so optimized equation: x += dt * (vx0 + axdt / 2)
+		currParticle.x = prevParticle.x + deltaTime * (currParticle.vx + axdt / 2);
+		currParticle.y = prevParticle.y + deltaTime * (currParticle.vy + aydt / 2);
+		currParticle.z = prevParticle.z + deltaTime * (currParticle.vz + azdt / 2);
+
+		// update velocities: vx = vx0 + ax * dt
+		currParticle.vx += axdt;
+		currParticle.vy += aydt;
+		currParticle.vz += azdt;
+	}
+
+	// parallelization can be done due to double buffering particles vector
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = neurotransmittersOffset; i < activeNeurotransmittersInLoopIndex; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
+		Particle& prevParticle = particles[nextBufferNum][i];
+
+		//const size_t index = currParticle.index;
+		const double partAccOriginDt = partAccOrigin[i] * deltaTime;
+
+		Particle* particle;
+		float dx, dy, dz, dSq;
+		float partAccOther;
+		float ax = 0.0, ay = 0.0, az = 0.0;
+
+		// caluclating forces with omiting checking if (i == j) with for loops: [0; current - 1] and [current + 1; last]
+		// calculate forces from particles 0 to current - 1
+		for (long j = neurotransmittersOffset; j < i; ++j) {
+			particle = &particles[nextBufferNum][j];
+
+			dx = particle->x - currParticle.x;
+			dy = particle->y - currParticle.y;
+			dz = particle->z - currParticle.z;
+
+			// distance between 2 particles squared (d - distance, Sq - squared)
+			dSq = dx * dx + dy * dy + dz * dz;
+			if (dSq == 0.0)
+				continue;
+
+			// part of acceleration which depends on other particle's charge and distance
+			partAccOther = particle->charge / dSq;
+
+			ax -= partAccOther * dx;
+			ay -= partAccOther * dy;
+			az -= partAccOther * dz;
+		}
+
+		// calculate forces from particles current + 1 to last
+		for (long j = i + 1; j < activeNeurotransmittersInLoopIndex; ++j) {
 			particle = &particles[nextBufferNum][j];
 
 			dx = particle->x - currParticle.x;
@@ -669,21 +806,19 @@ inline void Simulation::calculateParticlesPositions()
 inline void Simulation::calculateCollisions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum;
-	const long particlesOffset = config.NapIonsNum - activeNapsCount;
-	const long particlesBufferSizeInLoop = particlesOffset + activeParticlesCount;
+	const long neurotransmittersOffset = particlesOffsets[particle::NEUROTRANSMITTER];
+	const long activeNeurotransmittersCountInLoopIndex = particlesOffsets[particle::NEUROTRANSMITTER] + activeNeurotransmittersCount;
+	const long particlesOffset = config.particlesCount[particle::NAP] - activeNapsCount;
+	const long particlesBufferSizeInLoopIndex = particlesOffset + activeNapsCount + activeKpsCount;
 	
-	const long offsets[particle::TYPES_COUNT] = {
-		config.NapIonsNum,
-		config.NapIonsNum + config.KpIonsNum,
-		config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum,
-		config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum,
-		config.NapIonsNum + config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum + config.maxNeurotransmittersNum
-	};
+	long offsets[particle::TYPES_COUNT];
+	for (int i = 0; i < particle::TYPES_COUNT; ++i)
+		offsets[i] = particlesOffsets[i];
 
+	// Nap and Kp ions
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
-	for (long i = particlesOffset; i < particlesBufferSizeInLoop; ++i) {
+	for (long i = particlesOffset; i < particlesBufferSizeInLoopIndex; ++i) {
 		Particle& currParticle = particles[bufferNum][i];
 		Particle& prevParticle = particles[nextBufferNum][i];
 
@@ -696,8 +831,17 @@ inline void Simulation::calculateCollisions()
 			neuron->checkCollision(currParticle, prevParticle, particle::CLM);
 		else if (i < offsets[particle::ORGANIC_ANION])
 			neuron->checkCollision(currParticle, prevParticle, particle::ORGANIC_ANION);
-		else
-			neuron->checkCollision(currParticle, prevParticle, particle::NEUROTRANSMITTER);
+	}
+
+	// neurotransmitters
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = neurotransmittersOffset; i < activeNeurotransmittersCountInLoopIndex; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
+		Particle& prevParticle = particles[nextBufferNum][i];
+
+		// check if collide with lipid bilayer and if, then check if bounced or pass through channel
+		neuron->checkCollision(currParticle, prevParticle, particle::NEUROTRANSMITTER);
 	}
 }
 
@@ -706,7 +850,7 @@ inline void Simulation::updateNapIonsFromChannels()
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
 	const long channelsBufferSizeInLoop = channelsBufferSize;
 
-	if (activeNapsCount == config.NapIonsNum)
+	if (activeNapsCount == config.particlesCount[particle::NAP])
 		return;
 
 	for (long i = 0; i < channelsBufferSizeInLoop; ++i) {
@@ -730,8 +874,8 @@ inline void Simulation::updateNapIonsFromChannels()
 				float NapCoord0 = getRandDouble(0.001, 0.002);
 				++activeParticlesCount;
 				++activeNapsCount;
-				Particle& currParticle = particles[bufferNum][config.NapIonsNum - activeNapsCount];
-				Particle& prevParticle = particles[nextBufferNum][config.NapIonsNum - activeNapsCount];
+				Particle& currParticle = particles[bufferNum][config.particlesCount[particle::NAP] - activeNapsCount];
+				Particle& prevParticle = particles[nextBufferNum][config.particlesCount[particle::NAP] - activeNapsCount];
 
 				glm::vec3 n = glm::normalize(glm::vec3(currChannel.xIn - currChannel.xOut, currChannel.yIn - currChannel.yOut, currChannel.zIn - currChannel.zOut));
 				glm::vec3 v = n * NapV0;
@@ -745,7 +889,51 @@ inline void Simulation::updateNapIonsFromChannels()
 				prevParticle.vy = currParticle.vy = v[1];
 				prevParticle.vz = currParticle.vz = v[2];
 
-				if (activeNapsCount == config.NapIonsNum)
+				if (activeNapsCount == config.particlesCount[particle::NAP])
+					return;
+			}
+		}
+	}
+}
+
+inline void Simulation::updateKpIonsFromChannels()
+{
+	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
+	const long channelsBufferSizeInLoop = channelsBufferSize;
+
+	if (activeKpsCount == config.particlesCount[particle::KP])
+		return;
+
+	for (long i = 0; i < channelsBufferSizeInLoop; ++i) {
+		Channel& currChannel = neuron->channels[i];
+
+		if (currChannel.type == channel::KP && currChannel.state == channel::OPEN) {
+			float KpV0 = 5000;
+			unsigned ionsNum = 0;// timeFactor * 1e7 * getRandDouble(0.0, config.NapInflow);
+
+			if (getRandDouble(0.0, 1.0) < 0.01 * (1.0 / config.timeFactor) * timeFactor)
+				++ionsNum;
+
+			for (long j = 0; j < ionsNum; ++j) {
+				float KpCoord0 = getRandDouble(0.001, 0.002);
+				++activeParticlesCount;
+				++activeKpsCount;
+				Particle& currParticle = particles[bufferNum][particlesOffsets[particle::KP] + activeKpsCount];
+				Particle& prevParticle = particles[nextBufferNum][particlesOffsets[particle::KP] + activeKpsCount];
+
+				glm::vec3 n = glm::normalize(glm::vec3(currChannel.xOut - currChannel.xIn, currChannel.yOut - currChannel.yIn, currChannel.zOut - currChannel.zIn));
+				glm::vec3 v = n * KpV0;
+				glm::vec3 coords = n * KpCoord0;
+
+				prevParticle.x = currParticle.x = currChannel.xOut + coords[0];
+				prevParticle.y = currParticle.y = currChannel.yOut + coords[1];
+				prevParticle.z = currParticle.z = currChannel.zOut + coords[2];
+
+				prevParticle.vx = currParticle.vx = v[0];
+				prevParticle.vy = currParticle.vy = v[1];
+				prevParticle.vz = currParticle.vz = v[2];
+
+				if (activeKpsCount == config.particlesCount[particle::KP])
 					return;
 			}
 		}
@@ -755,12 +943,28 @@ inline void Simulation::updateNapIonsFromChannels()
 inline void Simulation::updateParticlesPositions()
 {
 	const unsigned short nextBufferNum = (bufferNum + 1) % 2;
-	const long particlesOffset = config.NapIonsNum - activeNapsCount;
-	const long particlesBufferSizeInLoop = particlesOffset + activeParticlesCount;
+	const long neurotransmittersOffset = particlesOffsets[particle::NEUROTRANSMITTER];
+	const long activeNeurotransmittersCountInLoopIndex = particlesOffsets[particle::NEUROTRANSMITTER] + activeNeurotransmittersCount;
+	const long particlesOffset = config.particlesCount[particle::NAP] - activeNapsCount;
+	const long particlesBufferSizeInLoop = particlesOffset + activeNapsCount + activeKpsCount;
 
+	// Nap and Kp ions
 #pragma loop(hint_parallel(0))
 #pragma loop(ivdep)
 	for (long i = particlesOffset; i < particlesBufferSizeInLoop; ++i) {
+		Particle& currParticle = particles[bufferNum][i];
+		Particle& prevParticle = particles[nextBufferNum][i];
+
+		// update positions, all particles have 3 coords, x, y, z, that's why 'index * 3' in particlesPos[]
+		particlesPos[i * 3 + 0] = currParticle.x;
+		particlesPos[i * 3 + 1] = currParticle.y;
+		particlesPos[i * 3 + 2] = currParticle.z;
+	}
+
+	// neurotransmitters
+#pragma loop(hint_parallel(0))
+#pragma loop(ivdep)
+	for (long i = neurotransmittersOffset; i < activeNeurotransmittersCountInLoopIndex; ++i) {
 		Particle& currParticle = particles[bufferNum][i];
 		Particle& prevParticle = particles[nextBufferNum][i];
 
@@ -790,6 +994,9 @@ inline void Simulation::update()
 
 	// update Nap ions inflow from open channels
 	updateNapIonsFromChannels();
+
+	// update Kp ions outflow from open channels
+	updateKpIonsFromChannels();
 
 	// update particles positions buffer with their calculated positions
 	updateParticlesPositions();
@@ -829,49 +1036,43 @@ inline void Simulation::render()
 	
 	if (renderParticles) {
 		// render particles
-		size_t ionsOffset = config.NapIonsNum - activeNapsCount;
+		size_t ionsOffset = config.particlesCount[particle::NAP] - activeNapsCount;
 
 		ionsRenderProgram->use();
 
 		uniforms.ionRadius = particleRadius[particle::NAP];
 		ionsRenderProgram->setUniforms(uniforms);
-
 		glBindTexture(GL_TEXTURE_2D, NapIonTexture);
 		glBindVertexArray(NapIonsVAO);
 		glDrawArrays(GL_POINTS, ionsOffset, activeNapsCount);
-		ionsOffset = config.NapIonsNum;
 
+		ionsOffset = particlesOffsets[particle::KP];
 		uniforms.ionRadius = particleRadius[particle::KP];
 		ionsRenderProgram->setUniforms(uniforms);
-
 		glBindTexture(GL_TEXTURE_2D, KpIonTexture);
 		glBindVertexArray(KpIonsVAO);
-		glDrawArrays(GL_POINTS, ionsOffset, config.KpIonsNum);
-		ionsOffset += config.KpIonsNum;
+		glDrawArrays(GL_POINTS, ionsOffset, activeKpsCount);
 
+		ionsOffset = particlesOffsets[particle::KP];
 		uniforms.ionRadius = particleRadius[particle::CLM];
 		ionsRenderProgram->setUniforms(uniforms);
-
 		glBindTexture(GL_TEXTURE_2D, ClmIonTexture);
 		glBindVertexArray(ClmIonsVAO);
-		glDrawArrays(GL_POINTS, ionsOffset, config.ClmIonsNum);
-		ionsOffset += config.ClmIonsNum;
+		glDrawArrays(GL_POINTS, ionsOffset, config.particlesCount[particle::CLM]);
 
+		ionsOffset = particlesOffsets[particle::CLM];
 		uniforms.ionRadius = particleRadius[particle::ORGANIC_ANION];
 		ionsRenderProgram->setUniforms(uniforms);
-
 		glBindTexture(GL_TEXTURE_2D, otherParticlesTexture);
 		glBindVertexArray(otherParticlesVAO);
-		glDrawArrays(GL_POINTS, ionsOffset, config.otherParticlesNum);
-		ionsOffset += config.otherParticlesNum;
+		glDrawArrays(GL_POINTS, ionsOffset, config.particlesCount[particle::ORGANIC_ANION]);
 
+		ionsOffset = particlesOffsets[particle::ORGANIC_ANION];
 		uniforms.ionRadius = particleRadius[particle::NEUROTRANSMITTER];
 		ionsRenderProgram->setUniforms(uniforms);
-
 		glBindTexture(GL_TEXTURE_2D, neurotransmittersTexture);
 		glBindVertexArray(neurotransmittersVAO);
-		glDrawArrays(GL_POINTS, ionsOffset, neurotransmittersCount);
-		ionsOffset += neurotransmittersCount;
+		glDrawArrays(GL_POINTS, ionsOffset, activeNeurotransmittersCount);
 	}
 	
 	// render neuron
@@ -938,11 +1139,11 @@ void Simulation::reverse(void)
 
 void Simulation::reset(void)
 {
-	activeParticlesCount = config.KpIonsNum + config.ClmIonsNum + config.otherParticlesNum;
+	activeParticlesCount = 0;
 	bufferNum = 0;
-	neurotransmittersCount = 0;
+	activeNeurotransmittersCount = 0;
 	activeNapsCount = 0;
-	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum;
+	const long neurotransmittersOffset = particlesBufferSize - config.particlesCount[particle::NEUROTRANSMITTER];
 	for (long i = 0; i < neuron->channels.size(); ++i) {
 		Channel& channel = neuron->channels[i];
 		if (channel.gating == channel::CONST_OPEN)
@@ -950,7 +1151,7 @@ void Simulation::reset(void)
 		channel.state = channel::CLOSED;
 		channelsAttribs[4 * i + 3] = 1.0f;
 	}
-	for (long i = 0; i < config.maxNeurotransmittersNum; ++i) {
+	for (long i = 0; i < config.particlesCount[particle::NEUROTRANSMITTER]; ++i) {
 		float offset[3] = { getRandDouble(-0.05, -0.01), getRandDouble(-0.03, 0.03), getRandDouble(-0.03, 0.03) };
 		float coords[3] = { synapsePosition[0] + offset[0], synapsePosition[1] + offset[1], synapsePosition[2] + offset[2] };
 		float velocities[3] = { 10000.0f, 0.0f, 0.0f };
@@ -970,22 +1171,22 @@ void Simulation::decreaseNeurotransmitters(const unsigned n)
 	if (n > activeParticlesCount)
 		return;
 
-	if (n > neurotransmittersCount) {
-		activeParticlesCount -= neurotransmittersCount;
-		neurotransmittersCount = 0;
+	if (n > activeNeurotransmittersCount) {
+		activeParticlesCount -= activeNeurotransmittersCount;
+		activeNeurotransmittersCount = 0;
 	}
 	else {
 		activeParticlesCount -= n;
-		neurotransmittersCount -= n;
+		activeNeurotransmittersCount -= n;
 	}
 }
 
 void Simulation::increaseNeurotransmitters(const unsigned n)
 {
-	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum + neurotransmittersCount;
+	const long neurotransmittersOffset = particlesBufferSize - config.particlesCount[particle::NEUROTRANSMITTER] + activeNeurotransmittersCount;
 
-	if (neurotransmittersCount < config.maxNeurotransmittersNum - n) {
-		neurotransmittersCount += n;
+	if (activeNeurotransmittersCount < config.particlesCount[particle::NEUROTRANSMITTER] - n) {
+		activeNeurotransmittersCount += n;
 		activeParticlesCount += n;
 
 		for (long i = 0; i < n; ++i) {

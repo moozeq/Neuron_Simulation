@@ -153,22 +153,22 @@ int Dendrite::getCollisionPoint(float* point, float newCoords[3], float oldCoord
 	}
 	else if (collisionType == collision::DISC_INSIDE) {
 		point[0] = discPoint[0];
-		point[1] = newCoords[1];
-		point[2] = newCoords[2];
+		point[1] = oldCoords[1];
+		point[2] = oldCoords[2];
 		return -3;
 	}
 	else if (collisionType == collision::DISC_OUTSIDE) {
 		point[0] = startCoords[0];
-		point[1] = newCoords[1];
-		point[2] = newCoords[2];
+		point[1] = oldCoords[1];
+		point[2] = oldCoords[2];
 		return -4;
 	}
 	else
 		return -2;
 
-	point[0] = oldCoords[0] + (newCoords[0] - oldCoords[0]) / 2.0f;
-	point[1] = oldCoords[1] + (newCoords[1] - oldCoords[1]) / 2.0f;
-	point[2] = oldCoords[2] + (newCoords[2] - oldCoords[2]) / 2.0f;
+	point[0] = oldCoords[0];// +(newCoords[0] - oldCoords[0]) / 2.0f;
+	point[1] = oldCoords[1];// +(newCoords[1] - oldCoords[1]) / 2.0f;
+	point[2] = oldCoords[2];// +(newCoords[2] - oldCoords[2]) / 2.0f;
 	return -1;
 }
 
@@ -202,12 +202,15 @@ bool Dendrite::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 	else {
 		x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
 		r = innerRadius;
-		inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
 	}
 
 	point[0] = x;
 	point[1] = r * sin(angle);
 	point[2] = r * cos(angle);
+
+	if (synapse >= synapseProbability)
+		inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
+
 	return true;
 }
 

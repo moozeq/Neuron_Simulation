@@ -155,14 +155,14 @@ int Axon::getCollisionPoint(float* point, float newCoords[3], float oldCoords[3]
 	}
 	else if (collisionType == collision::DISC_INSIDE) {
 		point[0] = discPoint[0];
-		point[1] = newCoords[1];
-		point[2] = newCoords[2];
+		point[1] = oldCoords[1];
+		point[2] = oldCoords[2];
 		return -3;
 	}
 	else if (collisionType == collision::DISC_OUTSIDE) {
 		point[0] = stopCoords[0];
-		point[1] = newCoords[1];
-		point[2] = newCoords[2];
+		point[1] = oldCoords[1];
+		point[2] = oldCoords[2];
 		return -4;
 	}
 	else
@@ -202,11 +202,11 @@ bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 		x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
 
 	r = innerRadius;
-	inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
-
 	point[0] = x;
 	point[1] = r * sin(angle);
 	point[2] = r * cos(angle);
+
+	inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
 
 	return true;
 }

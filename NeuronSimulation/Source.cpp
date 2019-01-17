@@ -24,7 +24,7 @@ int main(void)
 	config.somaRadius = 0.4;
 	// axon
 	config.axonRadius = 0.25;
-	config.axonLength = 12.0;
+	config.axonLength = 6.0;
 	config.axonHillockAreaFactor = 0.03125;
 	// dendrite
 	config.dendriteRadius = 0.0625;
@@ -36,32 +36,32 @@ int main(void)
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.maxNeurotransmittersNum = 4000;
-	config.NapIonsNum = 16000;
-	config.KpIonsNum = 0;
-	config.ClmIonsNum = 0;
-	config.otherParticlesNum = 0;
+	config.particlesCount[particle::NAP] = 5000;
+	config.particlesCount[particle::KP] = 7000;
+	config.particlesCount[particle::CLM] = 0;
+	config.particlesCount[particle::ORGANIC_ANION] = 0;
+	config.particlesCount[particle::NEUROTRANSMITTER] = 1000;
 
-	config.NapIonsChannelsDensity[barrier::SOMA] = 000.0f;
-	config.KpIonsChannelsDensity[barrier::SOMA] = 00.0f;
+	config.NapIonsChannelsDensity[barrier::SOMA] = 0.0f;
+	config.KpIonsChannelsDensity[barrier::SOMA] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON] = 100.0f;
+	config.NapIonsChannelsDensity[barrier::AXON] = 400.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 400.0f;
 
-	config.NapIonsChannelsDensity[barrier::DENDRITE] = 000.0f;
-	config.KpIonsChannelsDensity[barrier::DENDRITE] = 00.0f;
+	config.NapIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
+	config.KpIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
 
 	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 64000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 0.0f;
+	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 64000.0f;
 
-	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 15000.0f;
+	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 16000.0f;
 	config.KpIonsChannelsDensity[barrier::SYNAPSE] = 0.0f;
 
-	config.NapIonTexturePath = "NapIon.png";
-	config.KpIonTexturePath = "KpIon.png";
-	config.ClmIonTexturePath = "ClmIon.png";
-	config.otherParticlesTexturePath = "otherParticles.png";
-	config.neurotransmittersTexturePath = "neurotransmitters.png";
+	config.particlesTextures[particle::NAP] = "NapIon.png";
+	config.particlesTextures[particle::KP] = "KpIon.png";
+	config.particlesTextures[particle::CLM] = "ClmIon.png";
+	config.particlesTextures[particle::ORGANIC_ANION] = "otherParticles.png";
+	config.particlesTextures[particle::NEUROTRANSMITTER] = "neurotransmitters.png";
 
 	config.NapChannelTexturePath = "NapChannel.png";
 	config.KpChannelTexturePath = "KpChannel.png";
