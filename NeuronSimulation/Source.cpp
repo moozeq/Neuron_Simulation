@@ -19,39 +19,39 @@ int main(void)
 	config.buffersNum = 2;
 
 	// nucleus
-	config.nucleusRadius = 0.3;
+	config.nucleusRadius = 0.125;
 	// soma
-	config.somaRadius = 0.8;
+	config.somaRadius = 0.4;
 	// axon
-	config.axonRadius = 0.125;
+	config.axonRadius = 0.25;
 	config.axonLength = 12.0;
 	config.axonHillockAreaFactor = 0.03125;
 	// dendrite
 	config.dendriteRadius = 0.0625;
-	config.dendriteLength = 1.0;
+	config.dendriteLength = 0.5;
 
-	config.NapInflow = 0.1e7;
+	config.NapInflow = 1.0;
 
 	config.width = 1200;
 	config.height = 800;
 	config.logPath = "simulation.log";
 
-	config.maxNeurotransmittersNum = 1000;
+	config.maxNeurotransmittersNum = 4000;
 	config.NapIonsNum = 16000;
 	config.KpIonsNum = 0;
 	config.ClmIonsNum = 0;
 	config.otherParticlesNum = 0;
 
-	config.NapIonsChannelsDensity[barrier::SOMA] = 2000.0f;
-	config.KpIonsChannelsDensity[barrier::SOMA] = 100.0f;
+	config.NapIonsChannelsDensity[barrier::SOMA] = 000.0f;
+	config.KpIonsChannelsDensity[barrier::SOMA] = 00.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON] = 10000.0f;
+	config.NapIonsChannelsDensity[barrier::AXON] = 1000.0f;
 	config.KpIonsChannelsDensity[barrier::AXON] = 100.0f;
 
-	config.NapIonsChannelsDensity[barrier::DENDRITE] = 1000.0f;
-	config.KpIonsChannelsDensity[barrier::DENDRITE] = 100.0f;
+	config.NapIonsChannelsDensity[barrier::DENDRITE] = 000.0f;
+	config.KpIonsChannelsDensity[barrier::DENDRITE] = 00.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 3000.0f;
+	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 64000.0f;
 	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 0.0f;
 
 	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 15000.0f;

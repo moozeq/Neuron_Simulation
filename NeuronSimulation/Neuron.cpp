@@ -65,6 +65,9 @@ void Neuron::setupChannels(unsigned barrierIndex)
 				continue;
 			}
 		}
+		else if (barrierIndex == barrier::DENDRITE_LOC) {
+
+		}
 
 		channels[i] = Channel(insideCoords, outsideCoords, channel::NAP, channel::VOLTAGE_GATED);
 	}
@@ -92,7 +95,7 @@ void Neuron::setupChannels(unsigned barrierIndex)
 			}
 		}
 
-		channels[i] = Channel(insideCoords, outsideCoords, channel::KP, channel::VOLTAGE_GATED);
+		channels[i] = Channel(insideCoords, outsideCoords, channel::KP, channel::CONST_OPEN);
 	}
 }
 
@@ -116,20 +119,28 @@ void Neuron::setupAxon()
 	float somaAxonGap = getGap(somaInnerRadius, config.axonRadius - lipidBilayerWidth / 2.0f);
 
 	areas[barrier::AXON_LOC] = addBarrier(somaRadius + config.axonLength / 2.0f - somaAxonGap, 0.0f, 0.0f, config.axonRadius, config.axonLength, barrier::AXON);
-	unsigned axonNapChannelsCount = areas[barrier::AXON_LOC] * ((1.0 - config.axonHillockAreaFactor) * NapChannelsDensity[barrier::AXON] + config.axonHillockAreaFactor * NapChannelsDensity[barrier::AXON_HILLOCK]);
-	unsigned axonKpChannelsCount = areas[barrier::AXON_LOC] * ((1.0 - config.axonHillockAreaFactor) * KpChannelsDensity[barrier::AXON] + config.axonHillockAreaFactor * KpChannelsDensity[barrier::AXON_HILLOCK]);
+	
+	unsigned axonNapChannelsCount = areas[barrier::AXON_LOC] * ((1.0 - config.axonHillockAreaFactor) * NapChannelsDensity[barrier::AXON]);
+	unsigned axonKpChannelsCount = areas[barrier::AXON_LOC] * ((1.0 - config.axonHillockAreaFactor) * KpChannelsDensity[barrier::AXON]);
 	NapChannelsCount[barrier::AXON] += axonNapChannelsCount;
 	KpChannelsCount[barrier::AXON] += axonKpChannelsCount;
 
-	float synapseArea = phy::pi * config.axonRadius * config.axonRadius;
+	unsigned axonHillockNapChannelsCount = config.axonHillockAreaFactor * NapChannelsDensity[barrier::AXON_HILLOCK];
+	unsigned axonHillockKpChannelsCount = config.axonHillockAreaFactor * KpChannelsDensity[barrier::AXON_HILLOCK];
+	NapChannelsCount[barrier::AXON] += axonHillockNapChannelsCount;
+	KpChannelsCount[barrier::AXON] += axonHillockKpChannelsCount;
+
+	/*float synapseArea = phy::pi * config.axonRadius * config.axonRadius;
 	unsigned axonSynapseNapChannelsCount = synapseArea * NapChannelsDensity[barrier::SYNAPSE];
 	unsigned axonSynapseKpChannelsCount = synapseArea * KpChannelsDensity[barrier::SYNAPSE];
 	NapChannelsCount[barrier::AXON] += axonSynapseNapChannelsCount;
-	KpChannelsCount[barrier::AXON] += axonSynapseKpChannelsCount;
+	KpChannelsCount[barrier::AXON] += axonSynapseKpChannelsCount;*/
 
-	float probability = (float)axonSynapseNapChannelsCount / (float)(axonSynapseNapChannelsCount + axonNapChannelsCount);
+	float synapseProbability = 0;
+	float axonHillockProbability = (float)axonHillockNapChannelsCount / (float)(axonNapChannelsCount + axonHillockNapChannelsCount);
 	Axon* axon = static_cast<Axon*>(barriers[barrier::AXON_LOC]);
-	axon->setSynapseProbability(probability);
+	axon->setSynapseProbability(synapseProbability);
+	axon->setAxonHillockProbability(axonHillockProbability);
 	axon->setAxonHillockAreaFactor(config.axonHillockAreaFactor);
 }
 

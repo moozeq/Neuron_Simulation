@@ -9,6 +9,7 @@ class Axon :
 	float length;
 	float discPoint[3];
 	float synapseProbability;
+	float axonHillockProbability;
 	float axonHillockAreaFactor;
 
 	float startCoords[3];
@@ -26,6 +27,7 @@ public:
 	bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const;
 
 	void setSynapseProbability(float probability);
+	void setAxonHillockProbability(float probability);
 	void setAxonHillockAreaFactor(float factor);
 	float* getSynapsePoint();
 };

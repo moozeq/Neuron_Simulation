@@ -131,6 +131,8 @@ public:
 	void freeze(void);
 	void reverse(void);
 	void reset(void);
+	void decreaseNeurotransmitters(const unsigned n);
+	void increaseNeurotransmitters(const unsigned n);
 
 	double getDeltaTime(void) const;
 };

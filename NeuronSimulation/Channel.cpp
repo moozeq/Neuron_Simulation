@@ -26,4 +26,7 @@ Channel::Channel(float coordsIn[3], float coordsOut[3], channel::Type _type, cha
 		radius = 0.0f;
 		break;
 	}
+
+	if (_gating == channel::CONST_OPEN)
+		state = channel::OPEN;
 }

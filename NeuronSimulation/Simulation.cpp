@@ -369,19 +369,13 @@ void Simulation::keyCallback(GLFWwindow* window, int key, int scancode, int acti
 	
 	// 1 - increase neurotransmitters count
 	if (key == GLFW_KEY_1 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-		if (simulation->neurotransmittersCount < simulation->config.maxNeurotransmittersNum - 100) {
-			simulation->neurotransmittersCount += 10;
-			simulation->activeParticlesCount += 10;
-		}
+		simulation->increaseNeurotransmitters(10);
 		log(simulation->logfile, "[+] Neurotransmitters count increased = " + std::to_string(simulation->neurotransmittersCount));
 	}
 	
 	// 2 - decrease neurotransmitters count
 	if (key == GLFW_KEY_2 && (action == GLFW_PRESS || action == GLFW_REPEAT)) {
-		if (simulation->neurotransmittersCount >= 10) {
-			simulation->neurotransmittersCount -= 10;
-			simulation->activeParticlesCount -= 10;
-		}
+		simulation->decreaseNeurotransmitters(10);
 		log(simulation->logfile, "[-] Neurotransmitters count decreased = " + std::to_string(simulation->neurotransmittersCount));
 	}
 
@@ -553,19 +547,17 @@ inline void Simulation::updateChannelsStates()
 					currChannel.timeLeft -= fabs(deltaTime);
 					if (currChannel.timeLeft < 0.0f) {
 						currChannel.state = channel::INACTIVE;
+						currChannel.timeLeft = phy::NapOpenTime;
 						channelsAttribs[i * 4 + 3] = 0.5f;
 					}
 				}
 				else if (currChannel.state == channel::INACTIVE) {
-					if (U < phy::NapRepolarizationTreshold) {
+					currChannel.timeLeft -= fabs(deltaTime);
+					if (currChannel.timeLeft < 0.0) {
 						currChannel.state = channel::CLOSED;
 						channelsAttribs[i * 4 + 3] = 1.0f;
 					}
 				}
-			}
-			else if (currChannel.type == channel::KP) {
-				currChannel.state = channel::OPEN;
-				channelsAttribs[i * 4 + 3] = 0.0f;
 			}
 		}
 		// ligand-gated channel's state opening in collisions calculating, need to be closed when no neurotransmitters
@@ -722,8 +714,16 @@ inline void Simulation::updateNapIonsFromChannels()
 
 		if (currChannel.type == channel::NAP && currChannel.state == channel::OPEN) {
 			float NapV0 = 5000;
-			unsigned ionsNum = 0;
-			if (getRandDouble(0.0, 1.0) < 0.005)
+			unsigned ionsNum = 0;// timeFactor * 1e7 * getRandDouble(0.0, config.NapInflow);
+
+			if (currChannel.gating == channel::LIGAND_GATED) {
+				for (long k = 0; k < 20; ++k) {
+					if (getRandDouble(0.0, 1.0) < 0.005 * (1.0 / config.timeFactor) * timeFactor)
+						++ionsNum;
+				}
+			}
+
+			if (getRandDouble(0.0, 1.0) < 0.005 * (1.0 / config.timeFactor) * timeFactor)
 				++ionsNum;
 
 			for (long j = 0; j < ionsNum; ++j) {
@@ -800,7 +800,7 @@ inline void Simulation::update()
 
 inline void Simulation::render()
 {
-	glClearColor(0.3f, 0.3f, 0.3f, 1.0f);
+	glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	uniforms.viewMatrix = glm::perspective(glm::radians(camera.zoom), (float)width / (float)height, 0.1f, 100.0f) * camera.GetViewMatrix();
 
@@ -945,6 +945,8 @@ void Simulation::reset(void)
 	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum;
 	for (long i = 0; i < neuron->channels.size(); ++i) {
 		Channel& channel = neuron->channels[i];
+		if (channel.gating == channel::CONST_OPEN)
+			continue;
 		channel.state = channel::CLOSED;
 		channelsAttribs[4 * i + 3] = 1.0f;
 	}
@@ -960,6 +962,45 @@ void Simulation::reset(void)
 		particles[0][neurotransmittersOffset + i].vx = particles[1][neurotransmittersOffset + i].vx = velocities[0];
 		particles[0][neurotransmittersOffset + i].vy = particles[1][neurotransmittersOffset + i].vy = velocities[1];
 		particles[0][neurotransmittersOffset + i].vz = particles[1][neurotransmittersOffset + i].vz = velocities[2];
+	}
+}
+
+void Simulation::decreaseNeurotransmitters(const unsigned n)
+{
+	if (n > activeParticlesCount)
+		return;
+
+	if (n > neurotransmittersCount) {
+		activeParticlesCount -= neurotransmittersCount;
+		neurotransmittersCount = 0;
+	}
+	else {
+		activeParticlesCount -= n;
+		neurotransmittersCount -= n;
+	}
+}
+
+void Simulation::increaseNeurotransmitters(const unsigned n)
+{
+	const long neurotransmittersOffset = particlesBufferSize - config.maxNeurotransmittersNum + neurotransmittersCount;
+
+	if (neurotransmittersCount < config.maxNeurotransmittersNum - n) {
+		neurotransmittersCount += n;
+		activeParticlesCount += n;
+
+		for (long i = 0; i < n; ++i) {
+			float offset[3] = { getRandDouble(-0.05, -0.01), getRandDouble(-0.03, 0.03), getRandDouble(-0.03, 0.03) };
+			float coords[3] = { synapsePosition[0] + offset[0], synapsePosition[1] + offset[1], synapsePosition[2] + offset[2] };
+			float velocities[3] = { 10000.0f, 0.0f, 0.0f };
+
+			particles[0][neurotransmittersOffset + i].x = particles[1][neurotransmittersOffset + i].x = coords[0];
+			particles[0][neurotransmittersOffset + i].y = particles[1][neurotransmittersOffset + i].y = coords[1];
+			particles[0][neurotransmittersOffset + i].z = particles[1][neurotransmittersOffset + i].z = coords[2];
+
+			particles[0][neurotransmittersOffset + i].vx = particles[1][neurotransmittersOffset + i].vx = velocities[0];
+			particles[0][neurotransmittersOffset + i].vy = particles[1][neurotransmittersOffset + i].vy = velocities[1];
+			particles[0][neurotransmittersOffset + i].vz = particles[1][neurotransmittersOffset + i].vz = velocities[2];
+		}
 	}
 }
 

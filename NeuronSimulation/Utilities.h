@@ -42,12 +42,13 @@ namespace phy {
 	// >>>>>> CHANGEME <<<<<< no scale
 	constexpr double tempIonScale = 50;
 	constexpr double tempChannelScale = 2;
+	constexpr double tempTimeScale = 1e-3;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 
 	constexpr double NapOpenTreshold = -40e-3;
 	constexpr double NapRepolarizationTreshold = -10e-3;
-	constexpr double NapOpenTime = 1e-3;
+	constexpr double NapOpenTime = 1e-3 * tempTimeScale;
 
 	constexpr double NtrR = 1.16 * A * tempIonScale;
 	constexpr double NtrM = 38.1754326758e-27;

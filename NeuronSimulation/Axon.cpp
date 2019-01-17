@@ -49,7 +49,7 @@ Axon::Axon(float coords[3], float _radius, float _length, float _lipidBilayerWid
 	length(_length), slices(30)
 {
 	synapseProbability = 0.0f;
-	axonHillockAreaFactor = 0.0f;
+	axonHillockProbability = 0.0f;
 	precision = 0.01f;
 	radius = _radius;
 	lipidBilayerWidth = _lipidBilayerWidth;
@@ -193,22 +193,16 @@ bool Axon::getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collisio
 bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 {
 	// draw x and angle
-	float synapse = getRandDouble(0.0, 1.0);
+	float axonHillock = getRandDouble(0.0, 1.0);
 	float angle = getRandDouble(0.0, 2 * phy::pi);
 	float x, r;
-	if (synapse < synapseProbability) {
-		x = stopCoords[0] - lipidBilayerWidth;
-		r = getRandDouble(0.0, 1.0) * innerRadius;
-		inOutVec = glm::normalize(glm::vec3(1.0f, 0.0f, 0.0f));
-	}
-	else {
-		if (getRandDouble(0.0, 1.0) < axonHillockAreaFactor)
-			x = getRandDouble(startCoords[0] + lipidBilayerWidth, startCoords[0] + lipidBilayerWidth + length * axonHillockAreaFactor);
-		else
-			x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
-		r = innerRadius;
-		inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
-	}
+	if (axonHillock < axonHillockProbability)
+		x = getRandDouble(startCoords[0] + lipidBilayerWidth, startCoords[0] + lipidBilayerWidth + length * axonHillockAreaFactor);
+	else
+		x = getRandDouble(startCoords[0] + lipidBilayerWidth, stopCoords[0] - lipidBilayerWidth);;
+
+	r = innerRadius;
+	inOutVec = glm::normalize(glm::vec3(0, point[1] - y0, point[2] - z0));
 
 	point[0] = x;
 	point[1] = r * sin(angle);
@@ -220,6 +214,11 @@ bool Axon::getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const
 void Axon::setSynapseProbability(float probability)
 {
 	synapseProbability = probability;
+}
+
+void Axon::setAxonHillockProbability(float probability)
+{
+	axonHillockProbability = probability;
 }
 
 void Axon::setAxonHillockAreaFactor(float factor)
