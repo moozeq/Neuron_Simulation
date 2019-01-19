@@ -41,29 +41,18 @@ class Simulation
 	ShaderProgram* ionsRenderProgram;
 
 	// particles VAOs
-	GLuint NapIonsVAO;
-	GLuint KpIonsVAO;
-	GLuint ClmIonsVAO;
-	GLuint otherParticlesVAO;
-	GLuint neurotransmittersVAO;
+	GLuint particleVAO[particle::TYPES_COUNT];
 
 	// particles textures
-	GLuint NapIonTexture;
-	GLuint KpIonTexture;
-	GLuint ClmIonTexture;
-	GLuint otherParticlesTexture;
-	GLuint neurotransmittersTexture;
+	GLuint particleTexture[particle::TYPES_COUNT];
 
 	// particles structs
 	std::vector<Particle> particles[2];
 	std::vector<double> partAccOrigin;
 	float particleRadius[particle::TYPES_COUNT];
-	long particlesOffsets[particle::TYPES_COUNT];
+	long particlesOffset[particle::TYPES_COUNT];
+	long activeParticlesCount[particle::TYPES_COUNT];
 	long particlesBufferSize;
-	long activeNeurotransmittersCount;
-	long activeParticlesCount;
-	long activeNapsCount;
-	long activeKpsCount;
 	float* particlesPos;
 	float* synapsePosition;
 
@@ -73,18 +62,16 @@ class Simulation
 	ShaderProgram* channelsRenderProgram;
 
 	// channels VAOs
-	GLuint NapIonsChannelsVAO;
-	GLuint KpIonsChannelsVAO;
+	GLuint channelVAO[channel::TYPES_COUNT];
 
 	// channels textures
-	GLuint NapIonChannelTexture;
-	GLuint KpIonChannelTexture;
+	GLuint channelTexture[channel::TYPES_COUNT];
 
 	// channels structs
 	float channelRadius[channel::TYPES_COUNT];
+	long channelsOffset[channel::TYPES_COUNT];
+	long activeChannelsCount[channel::TYPES_COUNT];
 	long channelsBufferSize;
-	unsigned NapChannelsCount;
-	unsigned KpChannelsCount;
 	float* channelsAttribs;
 
 /* -----------------NEURON----------------- */

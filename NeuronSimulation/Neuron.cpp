@@ -297,8 +297,8 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 			// checking only channels with proper type
 			unsigned channelsIndexFrom, channelsIndexTo;
 
-			// Nap and neurotransmitters can only get to cell from outside
-			if ((type == particle::NEUROTRANSMITTER) && (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE)) {
+			// Nap can only get to cell from outside
+			if ((type == particle::NAP || type == particle::NEUROTRANSMITTER) && (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE)) {
 				channelsIndexFrom = barrier->NapChannelsIndexFrom;
 				channelsIndexTo = barrier->NapChannelsIndexTo;
 			}
@@ -435,4 +435,14 @@ float* Neuron::getSynapsePosition()
 	Dendrite* dendrite = static_cast<Dendrite*>(barriers[barrier::DENDRITE_LOC]);
 	position = dendrite->getSynapsePoint();
 	return position;
+}
+
+unsigned Neuron::getChannelsCount(const channel::Type type) const
+{
+	switch (type) {
+	case channel::NAP:
+		return allNapChannelsCount;
+	case channel::KP:
+		return allKpChannelsCount;
+	}
 }

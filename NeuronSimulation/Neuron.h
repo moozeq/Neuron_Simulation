@@ -51,4 +51,5 @@ public:
 	std::vector<float> getChannels();
 	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type);
 	float* getSynapsePosition();
+	unsigned getChannelsCount(const channel::Type type) const;
 };

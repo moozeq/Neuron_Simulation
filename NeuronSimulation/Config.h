@@ -22,7 +22,7 @@ struct Config
 	double dendriteRadius;
 	double dendriteLength;
 
-	double NapInflow;
+	double particlesFlow[channel::TYPES_COUNT];
 
 	// ions
 	size_t particlesCount[particle::TYPES_COUNT];
@@ -31,7 +31,5 @@ struct Config
 	// channels
 	double NapIonsChannelsDensity[barrier::DENSITY_TYPES_COUNT];
 	double KpIonsChannelsDensity[barrier::DENSITY_TYPES_COUNT];
-
-	std::string NapChannelTexturePath;
-	std::string KpChannelTexturePath;
+	std::string channelsTextures[channel::TYPES_COUNT];
 };

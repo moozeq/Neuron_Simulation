@@ -2,15 +2,14 @@
 #include "Utilities.h"
 
 namespace channel {
-	// must be in same order as in particle namespace
 	enum Type {
-		NAP, KP, NEUROTRANSMITTER, TYPES_COUNT
+		NAP, KP, TYPES_COUNT
 	};
 	enum Gating {
-		VOLTAGE_GATED, LIGAND_GATED, CONST_OPEN
+		VOLTAGE_GATED, LIGAND_GATED
 	};
 	enum State {
-		OPEN, CLOSED, INACTIVE, STATES_COUNT, NONE = 0
+		NONE = -1, OPEN, CLOSED, INACTIVE, STATES_COUNT
 	};
 }
 

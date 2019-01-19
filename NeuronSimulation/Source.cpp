@@ -25,12 +25,13 @@ int main(void)
 	// axon
 	config.axonRadius = 0.25;
 	config.axonLength = 6.0;
-	config.axonHillockAreaFactor = 0.03125;
+	config.axonHillockAreaFactor = 0.0625;
 	// dendrite
 	config.dendriteRadius = 0.0625;
 	config.dendriteLength = 0.5;
 
-	config.NapInflow = 1.0;
+	config.particlesFlow[channel::NAP] = 1e6;
+	config.particlesFlow[channel::KP] = 4e6;
 
 	config.width = 1200;
 	config.height = 800;
@@ -45,14 +46,14 @@ int main(void)
 	config.NapIonsChannelsDensity[barrier::SOMA] = 0.0f;
 	config.KpIonsChannelsDensity[barrier::SOMA] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON] = 400.0f;
-	config.KpIonsChannelsDensity[barrier::AXON] = 400.0f;
+	config.NapIonsChannelsDensity[barrier::AXON] = 180.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 180.0f;
 
 	config.NapIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
 	config.KpIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 64000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 64000.0f;
+	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 1800.0f;
+	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 1800.0f;
 
 	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 16000.0f;
 	config.KpIonsChannelsDensity[barrier::SYNAPSE] = 0.0f;
@@ -63,8 +64,8 @@ int main(void)
 	config.particlesTextures[particle::ORGANIC_ANION] = "otherParticles.png";
 	config.particlesTextures[particle::NEUROTRANSMITTER] = "neurotransmitters.png";
 
-	config.NapChannelTexturePath = "NapChannel.png";
-	config.KpChannelTexturePath = "KpChannel.png";
+	config.channelsTextures[channel::NAP] = "NapChannel.png";
+	config.channelsTextures[channel::KP] = "KpChannel.png";
 
 	try {
 		Simulation simulation(config);

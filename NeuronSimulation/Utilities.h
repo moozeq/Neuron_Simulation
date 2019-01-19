@@ -42,7 +42,7 @@ namespace phy {
 	// >>>>>> CHANGEME <<<<<< no scale
 	constexpr double tempIonScale = 50;
 	constexpr double tempChannelScale = 2;
-	constexpr double tempTimeScale = 1e-3;
+	constexpr double tempTimeScale = 1e-2;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 
