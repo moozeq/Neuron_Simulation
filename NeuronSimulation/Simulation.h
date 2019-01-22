@@ -26,6 +26,7 @@ class Simulation
 	shader::Uniforms uniforms;
 	bool ice;
 	bool rewind;
+	bool cursor;
 	bool renderParticles;
 	bool renderChannels;
 	double currentFrame;
@@ -48,11 +49,11 @@ class Simulation
 
 	// particles structs
 	std::vector<Particle> particles[2];
-	std::vector<double> partAccOrigin;
+	double partAccOrigin[particle::TYPES_COUNT];
 	float particleRadius[particle::TYPES_COUNT];
-	long particlesOffset[particle::TYPES_COUNT];
-	long activeParticlesCount[particle::TYPES_COUNT];
-	long particlesBufferSize;
+	int particlesOffset[particle::TYPES_COUNT];
+	int activeParticlesCount[particle::TYPES_COUNT];
+	int particlesBufferSize;
 	float* particlesPos;
 	float* synapsePosition;
 
@@ -69,9 +70,9 @@ class Simulation
 
 	// channels structs
 	float channelRadius[channel::TYPES_COUNT];
-	long channelsOffset[channel::TYPES_COUNT];
-	long activeChannelsCount[channel::TYPES_COUNT];
-	long channelsBufferSize;
+	int channelsOffset[channel::TYPES_COUNT];
+	int activeChannelsCount[channel::TYPES_COUNT];
+	int channelsBufferSize;
 	float* channelsAttribs;
 
 /* -----------------NEURON----------------- */

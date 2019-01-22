@@ -14,4 +14,3 @@ public:
 	bool getCollisionNormalVec(float collisionPoint[3], glm::vec3& n, collision::Type collisionType) const;
 	bool getRandPointOnInnerLayer(float* point, glm::vec3& inOutVec) const;
 };
-

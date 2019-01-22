@@ -29,6 +29,7 @@ namespace phy {
 	/* Na+ channel width:			0.45 nm					*/
 	/* K+ channel width:			1.5 nm					*/
 	/* Lipid bilayer width:			6.0 nm					*/
+	/* Synaptic gap width:			20.0 nm					*/
 	/* Na+ channel open treshold:   -40 mV					*/
 	/* Na+ channel open time:       1 ms					*/
 	/* Na+ channel inactive time:   1 ms					*/
@@ -40,11 +41,12 @@ namespace phy {
 	constexpr double pi = 3.14159265359;
 
 	// >>>>>> CHANGEME <<<<<< no scale
-	constexpr double tempIonScale = 50;
+	constexpr double tempIonScale = 30;
 	constexpr double tempChannelScale = 2;
 	constexpr double tempTimeScale = 1e-2;
 
 	constexpr double lipidBilayerWidth = 60 * A;
+	constexpr double synapticGapWidth = 200 * A;
 
 	constexpr double NapOpenTreshold = -40e-3;
 	constexpr double NapRepolarizationTreshold = -50e-3;
@@ -105,14 +107,6 @@ static inline float getPointLineDistance(const float point[3], const float start
 	return glm::length(glm::cross(X0X1, X0X2)) / glm::length(X2X1);
 }
 
-static inline float getPointOnLineDistanceFromCenter(float point[3], float lineCenter[3], float radius) {
-	float d = glm::distance(glm::vec3(point[0], point[1], point[2]), glm::vec3(lineCenter[0], lineCenter[1], lineCenter[2]));
-	if (d < radius)
-		return 0;
-	
-	return sqrt(d * d - radius * radius);
-}
-
 static GLuint generateVAO(std::vector<FCoord8>* vertices, std::vector<UCoord3>* indices) {
 	GLuint VAO, VBO, EBO;
 	glGenBuffers(1, &VBO);
@@ -140,6 +134,46 @@ static GLuint generateVAO(std::vector<FCoord8>* vertices, std::vector<UCoord3>* 
 	return VAO;
 }
 
+static void setParticleProperties(Particle* particle, particle::Type type) {
+	switch (type) {
+	case particle::NEUROTRANSMITTER:
+		particle->charge = phy::NtrC;
+		particle->mass = phy::NtrM;
+		particle->r = phy::NtrR;
+		break;
+
+	case particle::NAP:
+		particle->charge = phy::NapC;
+		particle->mass = phy::NapM;
+		particle->r = phy::NapR;
+		break;
+
+	case particle::KP:
+		particle->charge = phy::KpC;
+		particle->mass = phy::KpM;
+		particle->r = phy::KpR;
+		break;
+
+	case particle::CLM:
+		particle->charge = phy::ClmC;
+		particle->mass = phy::ClmM;
+		particle->r = phy::ClmR;
+		break;
+
+	case particle::ORGANIC_ANION:
+		particle->charge = phy::OanC;
+		particle->mass = phy::OanM;
+		particle->r = phy::OanR;
+		break;
+
+	default:
+		particle->charge = 0.0f;
+		particle->mass = phy::u1;
+		particle->r = phy::A;
+		break;
+	}
+}
+
 static Particle* newParticle(float x, float y, float z, particle::Type type) {
 	Particle* particle = new Particle();
 	particle->vx = 0.0;
@@ -149,33 +183,7 @@ static Particle* newParticle(float x, float y, float z, particle::Type type) {
 	particle->y = y;
 	particle->z = z;
 
-	switch (type) {
-	case particle::NEUROTRANSMITTER:
-	case particle::NAP:
-		particle->charge = phy::NapC;
-		particle->mass = phy::NapM;
-		break;
-
-	case particle::KP:
-		particle->charge = phy::KpC;
-		particle->mass = phy::KpM;
-		break;
-
-	case particle::CLM:
-		particle->charge = phy::ClmC;
-		particle->mass = phy::ClmM;
-		break;
-
-	case particle::ORGANIC_ANION:
-		particle->charge = phy::OanC;
-		particle->mass = phy::OanM;
-		break;
-
-	default:
-		particle->charge = 0.0;
-		particle->mass = phy::u1;
-		break;
-	}
+	setParticleProperties(particle, type);
 
 	return particle;
 }
@@ -189,33 +197,7 @@ static Particle* newParticle(float coords[3], float velocities[3], particle::Typ
 	particle->y = coords[1];
 	particle->z = coords[2];
 
-	switch (type) {
-	case particle::NEUROTRANSMITTER:
-	case particle::NAP:
-		particle->charge = phy::NapC;
-		particle->mass = phy::NapM;
-		break;
-
-	case particle::KP:
-		particle->charge = phy::KpC;
-		particle->mass = phy::KpM;
-		break;
-
-	case particle::CLM:
-		particle->charge = phy::ClmC;
-		particle->mass = phy::ClmM;
-		break;
-
-	case particle::ORGANIC_ANION:
-		particle->charge = phy::OanC;
-		particle->mass = phy::OanM;
-		break;
-
-	default:
-		particle->charge = 0.0;
-		particle->mass = phy::u1;
-		break;
-	}
+	setParticleProperties(particle, type);
 
 	return particle;
 }
@@ -229,48 +211,23 @@ static Particle* newParticle(double boundaries[3][2], particle::Type type) {
 	particle->y = getRandDouble(boundaries[1][0], boundaries[1][1]);
 	particle->z = getRandDouble(boundaries[2][0], boundaries[2][1]);
 
-	switch (type) {
-	case particle::NEUROTRANSMITTER:
-	case particle::NAP:
-		particle->charge = phy::NapC;
-		particle->mass = phy::NapM;
-		break;
-
-	case particle::KP:
-		particle->charge = phy::KpC;
-		particle->mass = phy::KpM;
-		break;
-
-	case particle::CLM:
-		particle->charge = phy::ClmC;
-		particle->mass = phy::ClmM;
-		break;
-
-	case particle::ORGANIC_ANION:
-		particle->charge = phy::OanC;
-		particle->mass = phy::OanM;
-		break;
-
-	default:
-		particle->charge = 0.0;
-		particle->mass = phy::u1;
-		break;
-	}
+	setParticleProperties(particle, type);
 
 	return particle;
 }
 
-static Particle* newParticle(double boundaries, double charge, double mass) {
+static Particle* newParticle(float coords[3], float velocities[3], double charge, double mass, double r) {
 	Particle* particle = new Particle();
-	particle->vx = 0.0;
-	particle->vy = 0.0;
-	particle->vz = 0.0;
-	particle->x = getRandDouble(-boundaries, boundaries);
-	particle->y = getRandDouble(-boundaries, boundaries);
-	particle->z = getRandDouble(-boundaries, boundaries);
+	particle->vx = velocities[0];
+	particle->vy = velocities[1];
+	particle->vz = velocities[2];
+	particle->x = coords[0];
+	particle->y = coords[1];
+	particle->z = coords[2];
 
 	particle->charge = charge;
 	particle->mass = mass;
+	particle->r = r;
 
 	return particle;
 }
@@ -321,23 +278,6 @@ static GLuint loadMipmapTexture(GLuint textureId, const char* fname)
 	glGenerateMipmap(GL_TEXTURE_2D);
 
 	glBindTexture(GL_TEXTURE_2D, 0);
-	delete(image);
+	stbi_image_free(image);
 	return texture;
 }
-
-static GLFWcursor* createCursor(std::string cursorImage)
-{
-	int cursorWidth, cursorHeight, comp;
-	unsigned char* pixels = stbi_load(cursorImage.c_str(), &cursorWidth, &cursorHeight, &comp, STBI_rgb_alpha);
-
-	// TODO make pics with alpha channel active, here's some workaround
-	clearAlphaChannel(pixels, cursorWidth, cursorHeight);
-	GLFWimage image;
-	image.width = cursorWidth;
-	image.height = cursorHeight;
-	image.pixels = pixels;
-	GLFWcursor* cursor = glfwCreateCursor(&image, 0, 0);
-	delete(pixels);
-	return cursor;
-}
-

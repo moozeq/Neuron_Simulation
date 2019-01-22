@@ -5,7 +5,6 @@
 To add new particle:
 	par::ParticleType	new type
 	newParticle()		case
-	loadConfig			update particlesBufferSize
 	setupStructures		loop with newParticle
 	setupBuffers	
 				texture (path in Config.h)
@@ -33,4 +32,5 @@ struct Particle
 
 	float charge;
 	float mass;
+	float r;
 };

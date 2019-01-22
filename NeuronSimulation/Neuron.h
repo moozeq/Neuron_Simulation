@@ -45,11 +45,11 @@ class Neuron
 	void setupStructures();
 
 public:
-	Neuron(double _metricFactor, double _timeFactor, const Config& config);
+	Neuron(const Config& config);
 	~Neuron();
 	void render(shader::Uniforms uniforms) const;
 	std::vector<float> getChannels();
-	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type);
+	bool checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const;
 	float* getSynapsePosition();
 	unsigned getChannelsCount(const channel::Type type) const;
 };

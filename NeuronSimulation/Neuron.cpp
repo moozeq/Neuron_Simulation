@@ -233,13 +233,15 @@ void Neuron::setupStructures()
 		setupChannels(i);
 }
 
-Neuron::Neuron(double _metricFactor, double _timeFactor, const Config& _config) :
-	metricFactor(_metricFactor), timeFactor(_timeFactor),
+Neuron::Neuron(const Config& _config) :
 	allNapChannelsCount(0), allKpChannelsCount(0)
 {
 	config = _config;
 
+	metricFactor = config.metricFactor;
+	timeFactor = config.timeFactor;
 	lipidBilayerWidth = phy::lipidBilayerWidth / metricFactor;
+
 	for (int i = 0; i < barrier::DENSITY_TYPES_COUNT; ++i) {
 		NapChannelsDensity[i] = config.NapIonsChannelsDensity[i];
 		KpChannelsDensity[i] = config.KpIonsChannelsDensity[i];
@@ -281,7 +283,7 @@ std::vector<float> Neuron::getChannels()
 	return channelsAttribs;
 }
 
-bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type)
+bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleState, const particle::Type type) const
 {
 	for (const Barrier* barrier : barriers) {
 		float newCoords[3] = { nextParticleState.x, nextParticleState.y, nextParticleState.z };
@@ -313,7 +315,7 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 
 			// check if collide with channel from current barrier
 			for (unsigned i = channelsIndexFrom; i < channelsIndexTo; ++i) {
-				Channel& currentChannel = channels[i];
+				const Channel& currentChannel = channels[i];
 
 				// check if channel is open and if ion type is appropriate to channel type
 				if (currentChannel.state != channel::OPEN && currentChannel.gating == channel::VOLTAGE_GATED)
@@ -339,39 +341,36 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 
 				// collision point is within channel radius and channel is open
 				if (d < currentChannel.radius) {
-					//glm::vec3 channelVecTemp;
 
 					// particle passed through channel >>> inside layer <<<
 					if (collisionType == collision::INSIDE || collisionType == collision::DISC_INSIDE) {
-						nextParticleState.x = currentChannel.xOut;
-						nextParticleState.y = currentChannel.yOut;
-						nextParticleState.z = currentChannel.zOut;
-						// change direction of particle's velocity vector  >>> inside layer <<<
-						//channelVecTemp = glm::vec3(currentChannel.xOut - currentChannel.xIn, currentChannel.yOut - currentChannel.yIn, currentChannel.zOut - currentChannel.zIn);
+						oldParticleState.x = nextParticleState.x = currentChannel.xOut;
+						oldParticleState.y = nextParticleState.y = currentChannel.yOut;
+						oldParticleState.z = nextParticleState.z = currentChannel.zOut;
 					}
 					// particle passed through channel >>> outside layer <<< or when ligand gated stay in channel position
 					else if (collisionType == collision::OUTSIDE || collisionType == collision::DISC_OUTSIDE) {
 
-						// when neurotransmitter hits ligand gated channel
+						// when neurotransmitter hits ligand gated closed channel
 						if (type == particle::NEUROTRANSMITTER && currentChannel.gating == channel::LIGAND_GATED && currentChannel.state == channel::CLOSED) {
-							nextParticleState.x = currentChannel.xOut;
-							nextParticleState.y = currentChannel.yOut;
-							nextParticleState.z = currentChannel.zOut;
+							oldParticleState.x = nextParticleState.x = currentChannel.xOut;
+							oldParticleState.y = nextParticleState.y = currentChannel.yOut;
+							oldParticleState.z = nextParticleState.z = currentChannel.zOut;
 
 							oldParticleState.vx = nextParticleState.vx = 0.0f;
 							oldParticleState.vy = nextParticleState.vy = 0.0f;
 							oldParticleState.vz = nextParticleState.vz = 0.0f;
 
-							currentChannel.state = channel::OPEN;
+							//currentChannel.state = channel::OPEN;
 						}
 						else if (type == particle::NEUROTRANSMITTER && currentChannel.gating == channel::LIGAND_GATED && currentChannel.state == channel::OPEN) {
 							glm::vec3 n;
 							barrier->getCollisionNormalVec(collisionPoint, n, collisionType);
 							glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
 
-							nextParticleState.x = collisionPoint[0];
-							nextParticleState.y = collisionPoint[1];
-							nextParticleState.z = collisionPoint[2];
+							oldParticleState.x = nextParticleState.x = collisionPoint[0];
+							oldParticleState.y = nextParticleState.y = collisionPoint[1];
+							oldParticleState.z = nextParticleState.z = collisionPoint[2];
 
 							// need to update velocities in both particle states
 							oldParticleState.vx = nextParticleState.vx = newVelocity[0];
@@ -380,43 +379,23 @@ bool Neuron::checkCollision(Particle& nextParticleState, Particle& oldParticleSt
 							return true;
 						}
 						else {
-							nextParticleState.x = currentChannel.xIn;
-							nextParticleState.y = currentChannel.yIn;
-							nextParticleState.z = currentChannel.zIn;
+							oldParticleState.x = nextParticleState.x = currentChannel.xIn;
+							oldParticleState.y = nextParticleState.y = currentChannel.yIn;
+							oldParticleState.z = nextParticleState.z = currentChannel.zIn;
 						}
-						// change direction of particle's velocity vector  >>> outside layer <<<
-						//channelVecTemp = glm::vec3(currentChannel.xIn - currentChannel.xOut, currentChannel.yIn - currentChannel.yOut, currentChannel.zIn - currentChannel.zOut);
 					}
 
-					//glm::vec3 channelVec = glm::normalize(channelVecTemp);
-
-					//// TODO detect if channelVec is inf/nan
-					//if (glm::isinf(channelVec[0]) || glm::isinf(channelVec[1]) || glm::isinf(channelVec[2])) {
-					//	std::cout << "\n current channel i = " + std::to_string(i) + " xin = " + std::to_string(currentChannel.xIn) + " yin = " + std::to_string(currentChannel.yIn) + " zin = " + std::to_string(currentChannel.zIn);
-					//	std::cout << "\n current channel i = " + std::to_string(i) + " yout = " + std::to_string(currentChannel.yOut) + " zout = " + std::to_string(currentChannel.zOut);
-					//	std::cout << "\n temp vec x = " + std::to_string(channelVecTemp[0]) + " y = " + std::to_string(channelVecTemp[1]) + " z = " + std::to_string(channelVecTemp[2]);
-					//}
-
-					/*float v = sqrt(nextParticleState.vx * nextParticleState.vx + nextParticleState.vy * nextParticleState.vy + nextParticleState.vz * nextParticleState.vz);
-					oldParticleState.vx = nextParticleState.vx = v * channelVec[0];
-					oldParticleState.vy = nextParticleState.vy = v * channelVec[1];
-					oldParticleState.vz = nextParticleState.vz = v * channelVec[2];*/
-
-					
-
-					// collide with channel
 					return true;
 				}
 			}
 
-			// TODO collide with barrier change coords and velocity
 			glm::vec3 n;
 			barrier->getCollisionNormalVec(collisionPoint, n, collisionType);
 			glm::vec3 newVelocity = glm::reflect(glm::vec3(nextParticleState.vx, nextParticleState.vy, nextParticleState.vz), n);
 
-			nextParticleState.x = collisionPoint[0];
-			nextParticleState.y = collisionPoint[1];
-			nextParticleState.z = collisionPoint[2];
+			oldParticleState.x = nextParticleState.x = collisionPoint[0];
+			oldParticleState.y = nextParticleState.y = collisionPoint[1];
+			oldParticleState.z = nextParticleState.z = collisionPoint[2];
 
 			// need to update velocities in both particle states
 			oldParticleState.vx = nextParticleState.vx = newVelocity[0];
@@ -444,5 +423,7 @@ unsigned Neuron::getChannelsCount(const channel::Type type) const
 		return allNapChannelsCount;
 	case channel::KP:
 		return allKpChannelsCount;
+	default:
+		return 0;
 	}
 }
