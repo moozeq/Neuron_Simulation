@@ -170,7 +170,6 @@
     <None Include="Channels.frag" />
     <None Include="Channels.geom" />
     <None Include="Channels.vert" />
-    <None Include="Ions.comp" />
     <None Include="Ions.frag" />
     <None Include="Ions.geom" />
     <None Include="Ions.vert" />

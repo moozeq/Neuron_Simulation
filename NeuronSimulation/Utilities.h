@@ -40,48 +40,49 @@ namespace phy {
 	constexpr double u1 = 1.6605389274e-27;
 	constexpr double pi = 3.14159265359;
 
-	// >>>>>> CHANGEME <<<<<< no scale
+	// scales
 	constexpr double tempIonScale = 30;
 	constexpr double tempChannelScale = 2;
-	constexpr double tempTimeScale = 1e-2;
+	constexpr double tempTimeScale = 1e-3;
 
 	constexpr double lipidBilayerWidth = 60 * A;
 	constexpr double synapticGapWidth = 200 * A;
 
 	constexpr double NapOpenTreshold = -40e-3;
-	constexpr double NapRepolarizationTreshold = -50e-3;
-	constexpr double NapOpenTime = 1e-3 * tempTimeScale;
+	constexpr double NapRepolarizationTreshold = -70e-3;
+	constexpr double NapOpenTime = 1e-3;
 
 	constexpr double KpOpenTreshold = 40e-3;
 	constexpr double KpRepolarizationTreshold = -40e-3;
+	constexpr double KpCloseTime = 3e-3;
 
-	constexpr double NtrR = 1.16 * A * tempIonScale;
+	constexpr double NtrR = 1.16 * A;
 	constexpr double NtrM = 38.1754326758e-27;
 	constexpr double NtrC = +1.0 * e;
 	constexpr double NtrA = k * NtrC / NtrM;
 
-	constexpr double NapR = 1.16 * A * tempIonScale;
+	constexpr double NapR = 1.16 * A;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
 	constexpr double NapA = k * NapC / NapM;
 
-	constexpr double KpR = 1.52 * A * tempIonScale;
+	constexpr double KpR = 1.52 * A;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
 	constexpr double KpA = k * KpC / KpM;
 
-	constexpr double ClmR = 1.67 * A * tempIonScale;
+	constexpr double ClmR = 1.67 * A;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
 	constexpr double ClmA = k * ClmC / ClmM;
 
-	constexpr double OanR = 2 * A * tempIonScale;
+	constexpr double OanR = 2 * A;
 	constexpr double OanM = 1000e-27;
 	constexpr double OanC = -1.0 * e;
 	constexpr double OanA = k * OanC / OanM;
 
-	constexpr double NapChR = 20 * A * tempChannelScale;
-	constexpr double KpChR = 34 * A * tempChannelScale;
+	constexpr double NapChR = 20 * A;
+	constexpr double KpChR = 34 * A;
 }
 
 struct UCoord3 {

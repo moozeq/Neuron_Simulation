@@ -145,14 +145,14 @@ void Simulation::setupParticlesStructures()
 
 void Simulation::setupUniforms()
 {
-	particleRadius[particle::NAP] = phy::NapR / metricFactor;
-	particleRadius[particle::KP] = phy::KpR / metricFactor;
-	particleRadius[particle::CLM] = phy::ClmR / metricFactor;
-	particleRadius[particle::ORGANIC_ANION] = phy::OanR / metricFactor;
-	particleRadius[particle::NEUROTRANSMITTER] = phy::NtrR / metricFactor;
+	particleRadius[particle::NAP] = (phy::NapR / metricFactor) * phy::tempIonScale;
+	particleRadius[particle::KP] = (phy::KpR / metricFactor) * phy::tempIonScale;
+	particleRadius[particle::CLM] = (phy::ClmR / metricFactor) * phy::tempIonScale;
+	particleRadius[particle::ORGANIC_ANION] = (phy::OanR / metricFactor) * phy::tempIonScale;
+	particleRadius[particle::NEUROTRANSMITTER] = (phy::NtrR / metricFactor) * phy::tempIonScale;
 
-	channelRadius[channel::NAP] = phy::NapChR / metricFactor;
-	channelRadius[channel::KP] = phy::KpChR / metricFactor;
+	channelRadius[channel::NAP] = (phy::NapChR / metricFactor) * phy::tempChannelScale;
+	channelRadius[channel::KP] = (phy::KpChR / metricFactor) * phy::tempChannelScale;;
 
 	// set const values as uniforms in shader program
 	uniforms.channelWidth = phy::lipidBilayerWidth / metricFactor;
@@ -193,7 +193,7 @@ void Simulation::setupParticlesBuffers()
 	// creating buffers
 	glCreateBuffers(1, &particlesPosBuf);
 
-	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT;
 	GLsizei bufferSize = particlesBufferSize * 3 * sizeof(GLfloat);
 	glNamedBufferStorage(particlesPosBuf, bufferSize, nullptr, flags);
 
@@ -225,7 +225,7 @@ void Simulation::setupChannelsBuffers()
 	// creating buffers
 	glCreateBuffers(1, &channelsBuf);
 
-	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+	GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_PERSISTENT_BIT;
 	std::vector<float> channels = neuron->getChannels();
 	glNamedBufferStorage(channelsBuf, channelsBufferSize * 4 * sizeof(GLfloat), &channels[0], flags);
 
@@ -510,7 +510,7 @@ inline void Simulation::updateChannelsStates()
 				if (currChannel.state == channel::CLOSED) {
 					if (U > phy::NapOpenTreshold) {
 						currChannel.state = channel::OPEN;
-						currChannel.timeLeft = phy::NapOpenTime;
+						currChannel.timeLeft = phy::NapOpenTime * phy::tempTimeScale;
 						channelsAttribs[i * 4 + 3] = 0.0f;
 					}
 				}
@@ -537,13 +537,19 @@ inline void Simulation::updateChannelsStates()
 				}
 				else if (currChannel.state == channel::OPEN) {
 					if (U < phy::KpRepolarizationTreshold) {
+						currChannel.state = channel::CLOSING;
+						currChannel.timeLeft = phy::KpCloseTime * phy::tempTimeScale;
+					}
+				}
+				else if (currChannel.state == channel::CLOSING) {
+					currChannel.timeLeft -= fabs(deltaTime);
+					if (currChannel.timeLeft < 0.0f) {
 						currChannel.state = channel::CLOSED;
 						channelsAttribs[i * 4 + 3] = 1.0f;
 					}
 				}
 			}
 		}
-		// ligand-gated channel's state opening in collisions calculating, need to be closed when no neurotransmitters
 		else if (currChannel.gating == channel::LIGAND_GATED) {
 			// open when neurotransmitter in its coordsOut position
 			bool open = false;
@@ -733,7 +739,7 @@ inline void Simulation::updateKpIonsFromChannels()
 	for (int i = 0; i < channelsBufferSizeInLoop; ++i) {
 		Channel& currChannel = neuron->channels[i];
 
-		if (currChannel.type == channel::KP && currChannel.state == channel::OPEN) {
+		if (currChannel.type == channel::KP && (currChannel.state == channel::OPEN || currChannel.state == channel::CLOSING)) {
 			float KpV0 = 5000;
 			int ionsNum = 0;
 			int iterations = 1;

@@ -109,9 +109,6 @@
     <None Include="Ions.frag">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Ions.comp">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="Barriers.vert">
       <Filter>Shaders</Filter>
     </None>

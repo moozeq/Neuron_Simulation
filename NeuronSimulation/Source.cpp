@@ -33,10 +33,10 @@ int main(void)
 	config.dendriteLength = 0.5;
 
 	config.particlesFlow[channel::NAP] = 1e6;
-	config.particlesFlow[channel::KP] = 4e6;
+	config.particlesFlow[channel::KP] = 2e6;
 
 	config.particlesCount[particle::NAP] = 10000;
-	config.particlesCount[particle::KP] = 10000;
+	config.particlesCount[particle::KP] = 12000;
 	config.particlesCount[particle::CLM] = 0;
 	config.particlesCount[particle::ORGANIC_ANION] = 0;
 	config.particlesCount[particle::NEUROTRANSMITTER] = 1000;
@@ -44,14 +44,14 @@ int main(void)
 	config.NapIonsChannelsDensity[barrier::SOMA] = 0.0f;
 	config.KpIonsChannelsDensity[barrier::SOMA] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON] = 180.0f;
-	config.KpIonsChannelsDensity[barrier::AXON] = 180.0f;
+	config.NapIonsChannelsDensity[barrier::AXON] = 400.0f;
+	config.KpIonsChannelsDensity[barrier::AXON] = 200.0f;
 
 	config.NapIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
 	config.KpIonsChannelsDensity[barrier::DENDRITE] = 0.0f;
 
-	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 16000.0f;
-	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 16000.0f;
+	config.NapIonsChannelsDensity[barrier::AXON_HILLOCK] = 32000.0f;
+	config.KpIonsChannelsDensity[barrier::AXON_HILLOCK] = 8000.0f;
 
 	config.NapIonsChannelsDensity[barrier::SYNAPSE] = 16000.0f;
 	config.KpIonsChannelsDensity[barrier::SYNAPSE] = 0.0f;

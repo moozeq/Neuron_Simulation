@@ -9,7 +9,7 @@ namespace channel {
 		VOLTAGE_GATED, LIGAND_GATED
 	};
 	enum State {
-		NONE = -1, OPEN, CLOSED, INACTIVE, STATES_COUNT
+		NONE = -1, OPEN, CLOSED, INACTIVE, CLOSING, STATES_COUNT
 	};
 }
 
