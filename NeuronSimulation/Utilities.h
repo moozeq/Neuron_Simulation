@@ -36,7 +36,7 @@ namespace phy {
 
 	constexpr double A = 1e-10;
 	constexpr double e = 1.60218e-19;
-	constexpr double k = 1.2839342030e+8;
+	constexpr double kH2O37 = 1.2839342030e+8;
 	constexpr double u1 = 1.6605389274e-27;
 	constexpr double pi = 3.14159265359;
 
@@ -59,27 +59,27 @@ namespace phy {
 	constexpr double NtrR = 1.16 * A;
 	constexpr double NtrM = 38.1754326758e-27;
 	constexpr double NtrC = +1.0 * e;
-	constexpr double NtrA = k * NtrC / NtrM;
+	constexpr double NtrA = kH2O37 * NtrC / NtrM;
 
 	constexpr double NapR = 1.16 * A;
 	constexpr double NapM = 38.1754326758e-27;
 	constexpr double NapC = +1.0 * e;
-	constexpr double NapA = k * NapC / NapM;
+	constexpr double NapA = kH2O37 * NapC / NapM;
 
 	constexpr double KpR = 1.52 * A;
 	constexpr double KpM = 64.7007990034e-27;
 	constexpr double KpC = +1.0 * e;
-	constexpr double KpA = k * KpC / KpM;
+	constexpr double KpA = kH2O37 * KpC / KpM;
 
 	constexpr double ClmR = 1.67 * A;
 	constexpr double ClmM = 58.0671408979e-27;
 	constexpr double ClmC = -1.0 * e;
-	constexpr double ClmA = k * ClmC / ClmM;
+	constexpr double ClmA = kH2O37 * ClmC / ClmM;
 
 	constexpr double OanR = 2 * A;
 	constexpr double OanM = 1000e-27;
 	constexpr double OanC = -1.0 * e;
-	constexpr double OanA = k * OanC / OanM;
+	constexpr double OanA = kH2O37 * OanC / OanM;
 
 	constexpr double NapChR = 20 * A;
 	constexpr double KpChR = 34 * A;

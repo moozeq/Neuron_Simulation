@@ -138,9 +138,6 @@
     <Image Include="KpIon.png">
       <Filter>Resource Files</Filter>
     </Image>
-    <Image Include="circlesBilayer.png">
-      <Filter>Resource Files</Filter>
-    </Image>
     <Image Include="bilayer.png">
       <Filter>Resource Files</Filter>
     </Image>

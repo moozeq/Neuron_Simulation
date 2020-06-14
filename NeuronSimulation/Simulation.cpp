@@ -137,7 +137,7 @@ void Simulation::setupParticlesStructures()
 
 			// for all particle types add one partAccOrigin
 			if (i == 0)
-				partAccOrigin[currentType] = (phy::k * particle->charge / particle->mass) / metricFactorSq;
+				partAccOrigin[currentType] = (phy::kH2O37 * particle->charge / particle->mass) / metricFactorSq;
 			delete particle;
 		}
 	}
@@ -463,7 +463,6 @@ inline void Simulation::updateChannelsStates()
 		Channel& currChannel = neuron->channels[i];
 		
 		// TODO probability to open instead of threshold (hidden markov model)
-		// TODO add relative refraction
 		// TODO channels open/close/inactive when deltaTime < 0
 
 		// voltage gated channels need voltage inside neuron computing
@@ -486,7 +485,7 @@ inline void Simulation::updateChannelsStates()
 				if (d == 0.0)
 					continue;
 
-				Ein += phy::k * particle->charge / (metricFactor * d);
+				Ein += phy::kH2O37 * particle->charge / (metricFactor * d);
 			}
 
 			// calc voltage outside neuron but only from Kp ions outside neuron
@@ -501,7 +500,7 @@ inline void Simulation::updateChannelsStates()
 				if (d == 0.0)
 					continue;
 
-				Eout += phy::k * particle->charge / (metricFactor * d);
+				Eout += phy::kH2O37 * particle->charge / (metricFactor * d);
 			}
 
 			currChannel.U = U = Ein - Eout;
